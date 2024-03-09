@@ -53,7 +53,13 @@ layout:
 
 ## Бізнес сценарії
 
-[Danylo Yaremenko](https://app.gitbook.com/u/gTTb7bVysOYyu1oDZncHsjDD8Wn2 "mention")
+
+
+### Не аутентифікований користувач
+
+
+
+<table><thead><tr><th width="165">ID</th><th>DC_1.1</th></tr></thead><tbody><tr><td><strong>НАЗВА</strong></td><td>Зареєструвати користувача</td></tr><tr><td><strong>УЧАСНИКИ</strong></td><td>Користувач, система</td></tr><tr><td><strong>ПЕРЕДУМОВИ</strong></td><td>Користувач не має облікового запису в системі</td></tr><tr><td><strong>РЕЗУЛЬТАТ</strong></td><td>Створений обліковий запис користувача</td></tr><tr><td><strong>ВИКЛЮЧНІ СИТУАЦІЇ</strong></td><td>DС_EX1_1.1 Користувач не заповнив усі обов'язкові поля форми для реєстрації</td></tr><tr><td></td><td>DС_EX2_1.1 Обліковий запис вже існує у системі</td></tr><tr><td></td><td>DС_EX3_1.1 Введений пароль не відповідає вимогам: <br>1. ...<br>2. ...<br>3. ...</td></tr><tr><td></td><td></td></tr><tr><td><strong>ОСНОВНИЙ СЦЕНАРІЙ</strong></td><td></td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr><tr><td></td><td></td></tr></tbody></table>
 
 ## Короткий огляд продукту
 
