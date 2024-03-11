@@ -12,6 +12,10 @@
 * **Computer Vision Service** - Аналізує отримане зображення та генерує відповідний йому опис.
 * **Computer Vision DB** - База даних, яка зберігає результати аналізу зображень.
 
+## Модель прецедентів <a href="#model-precedentiv" id="model-precedentiv"></a>
+
+<figure><img src=".gitbook/assets/users.jpg" alt=""><figcaption><p>Модель прецедентів</p></figcaption></figure>
+
 ## Сценарії використання
 
 ### Користувач без облікового запису
