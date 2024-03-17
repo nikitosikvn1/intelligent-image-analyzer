@@ -1,0 +1,15 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./certs:/etc/rabbitmq/certs
+      - /var/lib/rabbitmq
+    ports:
+      - '15672:15672'
+      - '5671:5671'
+    env_file:
+      - .env
+  
