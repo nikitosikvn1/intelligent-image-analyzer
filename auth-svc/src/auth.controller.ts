@@ -1,22 +1,36 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, UsePipes, ValidationPipe, UseFilters } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { MessagePattern, Ctx, RmqContext } from '@nestjs/microservices';
+import { MessagePattern, Ctx, RmqContext, Payload } from '@nestjs/microservices';
+import { SignUpDto } from './dto/';
+import { RpcValidationFilter } from './filters/rpc.validation.filter';
 
+@UseFilters(new RpcValidationFilter())
 @Controller()
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
-  @Get()
-  getHello(): string {
-    return this.authService.getHello();
-  }
-
-  @MessagePattern({ cmd: 'get-user' })
-  async getUser(@Ctx() context: RmqContext) {
+  @MessagePattern({ cmd: 'sign-up' })
+  @UsePipes(ValidationPipe)
+  async signUp(@Payload() dto: SignUpDto, @Ctx() context: RmqContext) {
     const channel = context.getChannelRef();
-    const message = context.getMessage();
-    channel.ack(message);
+    const originalMsg = context.getMessage();
 
-    return { user: 'USER' };
+    try {
+      const user = await this.authService.signUp(dto);
+      channel.ack(originalMsg);
+      if (user.success) {
+        return {
+          status: 'success',
+          message: 'user has been registered',
+          statusCode: 201
+        };
+      }
+    } catch (error) {
+      channel.ack(originalMsg);
+      return {
+        status: 'error',
+        message: error.response || error.message,
+      };
+    }
   }
 }
