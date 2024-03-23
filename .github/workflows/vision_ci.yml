@@ -22,6 +22,7 @@ jobs:
 
     steps:
       - name: Install Protobuf
+        shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             choco install protoc
