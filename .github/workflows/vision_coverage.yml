@@ -9,6 +9,9 @@ jobs:
     name: coverage
     runs-on: ubuntu-latest
     steps:
+      - name: Install Protobuf
+        run: sudo apt-get install protobuf-compiler
+      
       - name: Checkout sources
         uses: actions/checkout@v4
     
