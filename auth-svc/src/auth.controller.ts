@@ -14,4 +14,16 @@ export class AuthController {
   async signUp(@Payload() dto: SignUpDto): Promise<SignUpResultDto> {
     return await this.authService.signUp(dto);
   }
+
+  @MessagePattern({ cmd: 'sign-in' })
+  @UsePipes(ValidationPipe)
+  async singIn(@Payload() dto: SignInDto): Promise<SignInResultDto> {
+    return await this.authService.signIn(dto);
+  }
+
+  @MessagePattern({ cmd: 'validate-token' })
+  @UsePipes(ValidationPipe)
+  async validateToken(@Payload() dto: JwtDto): Promise<JwtResultDto> {
+    return this.authService.validateToken(dto);
+  }
 }
