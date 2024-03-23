@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package computer_vision;
 
-service ComputerVisionService {
-    rpc ProcessImage(ImageProcessingRequest) returns (ImageProcessingResponse);
-    rpc ProcessImageBatch(stream ImageProcessingRequest) returns (stream ImageProcessingResponse);
+service ComputerVision {
+    rpc ProcessImage(ImgProcRequest) returns (ImgProcResponse);
+    rpc ProcessImageBatch(stream ImgProcRequest) returns (stream ImgProcResponse);
 }
 
 enum ModelType {
@@ -12,11 +12,11 @@ enum ModelType {
     BLIP_QUANTIZED = 1;
 }
 
-message ImageProcessingRequest {
+message ImgProcRequest {
     bytes image = 1;
     ModelType model = 2;
 }
 
-message ImageProcessingResponse {
+message ImgProcResponse {
     string description = 1;
 }
