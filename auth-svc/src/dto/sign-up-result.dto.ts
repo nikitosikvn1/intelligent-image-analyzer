@@ -1,6 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from "class-validator";
 
 export class SignUpResultDto {
-  @ApiProperty()
-  success: boolean;
+  @IsString()
+  status: string;
+
+  message: string | Array<string>;
 }

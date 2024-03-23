@@ -35,7 +35,8 @@ export class AuthService {
     // Save the user to the database
     await this.userRepository.save(newUser);
     return {
-      success: true
+      status: 'success',
+      message: 'User has been registered'
     };
   }
 }
