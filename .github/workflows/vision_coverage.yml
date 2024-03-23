@@ -26,7 +26,11 @@ jobs:
         run: rustup toolchain install nightly
     
       - name: Install Tarpaulin
-        run: cargo +nightly install cargo-tarpaulin
+        run: |
+          if ! command -v cargo-tarpaulin &> /dev/null
+          then
+              cargo +nightly install cargo-tarpaulin
+          fi
         
       - name: Generate code coverage
         working-directory: grpc-vision-svc
