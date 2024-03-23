@@ -1,0 +1,5 @@
+# Certs
+/certs
+
+# Environment
+.env

@@ -1,0 +1,27 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./certs:/etc/rabbitmq/certs
+      - /var/lib/rabbitmq
+    ports:
+      - '15672:15672'
+      - '5671:5671'
+    env_file:
+      - .env
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:rw
+    ports:
+      - '${DB_PORT}:${DB_PORT}'
+
+volumes:
+  postgres_data:
