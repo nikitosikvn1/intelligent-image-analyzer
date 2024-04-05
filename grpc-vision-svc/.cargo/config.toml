@@ -1,0 +1,3 @@
+[env]
+RUST_LOG = "INFO"
+GRPC_SERVER_ADDR = "[::1]:50051"
