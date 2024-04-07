@@ -1,0 +1,55 @@
+name: auth-svc-docs
+
+on:
+  push:
+    branches: ["auth-svc"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Setup pages
+        id: pages
+        uses: actions/configure-pages@v4
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./auth-svc
+
+      - name: Generate Documentation
+        run: npx @compodoc/compodoc -p tsconfig.json -d docs
+        working-directory: ./auth-svc
+
+      - name: Add redirect
+        run: echo '<meta http-equiv="refresh" content="0;url=index.html">' > docs/index.html
+        working-directory: ./auth-svc
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./auth-svc/docs
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
