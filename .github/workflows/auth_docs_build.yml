@@ -18,9 +18,9 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Setup pages
         id: pages
@@ -32,10 +32,6 @@ jobs:
 
       - name: Generate Documentation
         run: npx @compodoc/compodoc -p tsconfig.json -d docs
-        working-directory: ./auth-svc
-
-      - name: Add redirect
-        run: echo '<meta http-equiv="refresh" content="0;url=index.html">' > docs/index.html
         working-directory: ./auth-svc
 
       - name: Upload artifact
