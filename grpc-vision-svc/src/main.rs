@@ -1,8 +1,10 @@
 use std::env;
 use std::net::SocketAddr;
 use tonic::transport::Server;
+use tonic_reflection::server::Builder as ReflectionBuilder;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 
+use grpc_vision_svc::proto::FILE_DESCRIPTOR_SET;
 use grpc_vision_svc::proto::computer_vision_server::ComputerVisionServer;
 use grpc_vision_svc::service_impl::ComputerVisionSvc;
 
@@ -15,7 +17,6 @@ async fn shutdown_signal() {
 
     tracing::info!("Received Ctrl-C signal, shutting down...");
 }
-
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,12 +35,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse()
         .expect("Invalid socket address");
 
+    let reflection_svc = ReflectionBuilder::configure()
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+        .build()?;
+
     let computer_vision_svc = ComputerVisionSvc::default();
 
-    tracing::info!(message = "Starting server", address = %addr);
+    tracing::info!(addr = %addr, "Starting gRPC server...");
 
     Server::builder()
         .trace_fn(|request| tracing::debug_span!("grpc", ?request))
+        .add_service(reflection_svc)
         .add_service(ComputerVisionServer::new(computer_vision_svc))
         .serve_with_shutdown(addr, shutdown_signal())
         .await?;
