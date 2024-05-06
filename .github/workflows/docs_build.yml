@@ -1,0 +1,85 @@
+name: Build docs
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [closed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Protobuf
+        run: sudo apt-get install protobuf-compiler
+      
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Setup pages
+        id: pages
+        uses: actions/configure-pages@v4
+      
+        # JS Docs
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./auth-svc
+      
+      - name: Generate Documentation
+        run: npx @compodoc/compodoc -p tsconfig.json -d docs
+        working-directory: ./auth-svc
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./auth-svc/docs
+      
+        # Rust Docs
+      - name: Clean docs folder
+        working-directory: grpc-vision-svc
+        run: cargo clean --doc
+      
+      - name: Build docs
+        working-directory: grpc-vision-svc
+        run: cargo doc --no-deps
+      
+      - name: Create index page
+        run: |
+          echo '<h1>Documentation</h1>' > index.html
+          echo '<ul>' >> index.html
+          echo '<li><a href="auth-svc/docs/index.html"> Auth service (JS)</a></li>' >> index.html
+          echo '<li><a href="grpc-vision-svc/target/doc/index.html">CV Service (Rust)</a></li>' >> index.html
+          echo '</ul>' >> index.html
+      
+      - name: Remove lock file
+        working-directory: grpc-vision-svc
+        run: rm target/doc/.lock
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: grpc-vision-svc/target/doc
+  
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+  
