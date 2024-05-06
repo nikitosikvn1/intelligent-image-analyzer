@@ -1,6 +1,7 @@
 name: Build docs
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: ["main"]
     types: [closed]
@@ -13,7 +14,7 @@ permissions:
 jobs:
   build:
     name: Build
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Install Protobuf
@@ -44,6 +45,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./auth-svc/docs
+          name: js-docs
       
         # Rust Docs
       - name: Clean docs folder
@@ -70,6 +72,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: grpc-vision-svc/target/doc
+          name: rust-docs
   
   deploy:
     name: Deploy
