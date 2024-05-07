@@ -2,9 +2,7 @@ name: CV Service CI
 
 on:
   push:
-    branches: ["main", "grpc-vision-svc"]
-  pull_request:
-    branches: ["main"]
+    branches: ["grpc-vision-svc"]
 
 env:
   CARGO_TERM_COLOR: always
