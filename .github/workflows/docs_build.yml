@@ -40,13 +40,6 @@ jobs:
       - name: Generate Documentation
         run: npx @compodoc/compodoc -p tsconfig.json -d docs
         working-directory: ./auth-svc
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./auth-svc/docs
-          name: js-docs
-      
         # Rust Docs
       - name: Clean docs folder
         working-directory: grpc-vision-svc
@@ -56,23 +49,30 @@ jobs:
         working-directory: grpc-vision-svc
         run: cargo doc --no-deps
       
-      - name: Create index page
-        run: |
-          echo '<h1>Documentation</h1>' > index.html
-          echo '<ul>' >> index.html
-          echo '<li><a href="auth-svc/docs/index.html"> Auth service (JS)</a></li>' >> index.html
-          echo '<li><a href="grpc-vision-svc/target/doc/index.html">CV Service (Rust)</a></li>' >> index.html
-          echo '</ul>' >> index.html
-      
       - name: Remove lock file
         working-directory: grpc-vision-svc
         run: rm target/doc/.lock
       
-      - name: Upload artifact
+      - name: Create index page
+        run: |
+          echo '<h1>Documentation</h1>' > index.html
+          echo '<ul>' >> index.html
+          echo '<li><a href="auth-svc/index.html"> Auth service (JS)</a></li>' >> index.html
+          echo '<li><a href="grpc-vision-svc/grpc_vision_svc/index.html">ComputerVision Service (Rust)</a></li>' >> index.html
+          echo '</ul>' >> index.html
+      
+      - name: Prepare files for upload
+        run: |
+          mkdir upload
+          cp -r auth-svc/docs upload/auth-svc
+          cp -r grpc-vision-svc/target/doc upload/grpc-vision-svc
+          cp index.html upload/
+      
+      - name: Upload index page
         uses: actions/upload-pages-artifact@v3
         with:
-          path: grpc-vision-svc/target/doc
-          name: rust-docs
+          name: github-pages
+          path: upload/
   
   deploy:
     name: Deploy
@@ -85,4 +85,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-  
