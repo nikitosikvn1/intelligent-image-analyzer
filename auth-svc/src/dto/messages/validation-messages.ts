@@ -25,5 +25,6 @@ export const ValidationMessages = {
     minLength: 'password must be at least 8 characters long',
     maxLength: 'password must be at most 128 characters long',
     strong: 'password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character',
+    required: 'password is required',
   },
 };

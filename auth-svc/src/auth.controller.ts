@@ -55,7 +55,7 @@ export class AuthController {
    */
   @MessagePattern({ cmd: 'sign-in' })
   @UsePipes(ValidationPipe)
-  async singIn(@Payload() dto: SignInDto): Promise<SignInResultDto> {
+  async signIn(@Payload() dto: SignInDto): Promise<SignInResultDto> {
     return await this.authService.signIn(dto);
   }
 

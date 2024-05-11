@@ -27,6 +27,6 @@ export class SignInDto {
    * @IsNotEmpty Ensures the password field is not left blank, maintaining the integrity of authentication requests.
    */
   @IsString({ message: ValidationMessages.password.string })
-  @IsNotEmpty()
+  @IsNotEmpty({message: ValidationMessages.password.required})
   password: string;
 }
