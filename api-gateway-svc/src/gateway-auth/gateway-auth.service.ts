@@ -20,7 +20,6 @@ export class GatewayAuthService {
   /**
    * Sends sign-in request to the authentication microservice.
    *
-   * @async
    * @param {object} data Data object containing sign-in details.
    * @returns {Observable<object>} Observable with the result of sign-in operation.
    */
@@ -31,7 +30,6 @@ export class GatewayAuthService {
   /**
    * Sends sign-up request to the authentication microservice.
    *
-   * @async
    * @param {object} data Data object containing sign-up details.
    * @returns {Observable<object>} Observable with the result of sign-up operation.
    */
@@ -42,7 +40,6 @@ export class GatewayAuthService {
   /**
    * Sends token validation request to the authentication microservice.
    *
-   * @async
    * @param {object} data Data object containing token to be validated.
    * @returns {Observable<object>} Observable with the result of token validation operation.
    */
