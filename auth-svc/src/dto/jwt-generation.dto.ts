@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsNotEmpty } from "class-validator";
+import { IsEmail, IsString, IsNotEmpty, IsOptional } from "class-validator";
 import { ValidationMessages } from "./messages/validation-messages";
 
 /**
@@ -6,7 +6,7 @@ import { ValidationMessages } from "./messages/validation-messages";
  * specific criteria before proceeding with authentication. Validation messages are customized through
  * a centralized messages repository to enhance user feedback.
  */
-export class SignInDto {
+export class JwtGenerationDto {
   /**
    * User's email address, serving as the unique identifier for sign-in.
    * It undergoes two layers of validation: it must be a well-formed email address and cannot be empty.
@@ -29,4 +29,15 @@ export class SignInDto {
   @IsString({ message: ValidationMessages.password.string })
   @IsNotEmpty({message: ValidationMessages.password.required})
   password: string;
+
+
+  /**
+   * Optional flag indicating whether the request is for a token refresh operation.
+   * If set to true, the system will generate a new access token and refresh token pair.
+   *
+   * @isOptional Decorator that marks the property as optional, allowing it to be omitted from the request payload.
+   * @IsBoolean Decorator that validates the property is a boolean, enforcing that the validation result is explicitly expressed as either true or false.
+    */
+  @IsOptional()
+  isRefreshToken?: boolean;
 }

@@ -1,5 +1,5 @@
 import { BadRequestException, ValidationPipe } from "@nestjs/common";
-import { JwtDto, SignInDto, SignUpDto } from '../dto';
+import { JwtDto, JwtGenerationDto, SignUpDto } from '../dto';
 import { ValidationMessages } from '../dto/messages/validation-messages';
 
 describe('ValidationPipe', () => {
@@ -99,13 +99,13 @@ describe('ValidationPipe', () => {
   describe('SignInDto', () => {
     it('should pass validation for valid input', async () => {
       // Given
-      const inputDto: SignInDto = {
+      const inputDto: JwtGenerationDto = {
         email: 'example@gmail.com',
         password: 'StrongPassword123!',
       };
 
       // When
-      const result = await validationPipe.transform(inputDto, { type: 'body', metatype: SignInDto });
+      const result = await validationPipe.transform(inputDto, { type: 'body', metatype: JwtGenerationDto });
 
       // Then
       expect(result).toEqual(inputDto);
@@ -113,24 +113,24 @@ describe('ValidationPipe', () => {
 
     it('should throw an error for invalid email', async () => {
       // Given
-      const inputDto: SignInDto = {
+      const inputDto: JwtGenerationDto = {
         email: 'examplegmail.com', // Invalid as per assumed IsEmail validation rule
         password: 'StrongPassword123!',
       };
 
       // Then
-      await performValidation(inputDto, SignInDto, 'email', ValidationMessages.email.valid);
+      await performValidation(inputDto, JwtGenerationDto, 'email', ValidationMessages.email.valid);
     });
 
     it('should throw an error for invalid password', async () => {
       // Given
-      const inputDto: SignInDto = {
+      const inputDto: JwtGenerationDto = {
         email: 'example@gmail.com',
         password: '', // Invalid as per assumed IsNotEmpty validation rule
       };
 
       // Then
-      await performValidation(inputDto, SignInDto, 'password', ValidationMessages.password.required);
+      await performValidation(inputDto, JwtGenerationDto, 'password', ValidationMessages.password.required);
     });
   });
 

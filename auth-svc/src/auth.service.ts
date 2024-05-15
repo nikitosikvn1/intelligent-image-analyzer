@@ -1,10 +1,13 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SignUpDto, SignInDto, JwtDto, SignUpResultDto, SignInResultDto, JwtResultDto } from './dto';
+import { SignUpDto, JwtGenerationDto, JwtDto, SignUpResultDto, JwtGenerationResultDto, JwtValidationResultDto } from './dto';
 import { User } from './entities/user.entity';
-import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
+import { NotRefreshTokenError, NotAccessTokenError } from './exceptions';
 import * as bcrypt from 'bcrypt';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 /**
  * AuthService handles user authentication processes like registration, login, and JWT token validation. 
@@ -15,6 +18,11 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class AuthService {
   /**
+   * Time-to-live (TTL) for the refresh token cache, in milliseconds.
+   */
+  private readonly JWT_REFRESH_TTL = 1000 * 60 * 60 * 24; // 24 hours
+
+  /**
   * Initializes AuthService with necessary dependencies.
   * 
   * @param {Repository<User>} userRepository Injected TypeORM repository for accessing user data.
@@ -23,7 +31,9 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) { }
 
   /**
@@ -77,14 +87,14 @@ export class AuthService {
    *   email: 'email@gmail.com',
    *   password: 'StrongPassword123!'
    * });
-   * console.log(signInResult); // Expected result: { status: 'success', message: 'JWT has been generated', token: '...' }
+   * console.log(signInResult); // Expected result: { accessToken, refreshToken }
    * 
    * @async
-   * @param {SignInDto} dto The data transfer object containing the sign-in credentials.
-   * @returns {Promise<SignInResultDto>} A result object containing the JWT if authentication is successful.
-   * @throws {ConflictException} If the email does not exist or the password is incorrect.
+   * @param {JwtGenerationDto} dto The data transfer object containing the sign-in credentials.
+   * @returns {Promise<JwtGenerationResultDto>} A result object containing the JWT.
+   * @throws {ConflictException} If user with such email does not exist or the password is incorrect.
    */
-  async signIn(dto: SignInDto): Promise<SignInResultDto> {
+  async signIn(dto: JwtGenerationDto): Promise<JwtGenerationResultDto> {
     const user = await this.userRepository.findOneBy({ email: dto.email });
 
     if (!user) {
@@ -99,12 +109,79 @@ export class AuthService {
 
     const payload = { email: user.email, sub: user.id };
     const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign({ isRefreshToken: true, ...payload }, { expiresIn: '1d' });
 
-    return {
-      status: 'success',
-      message: 'JWT has been generated',
-      token: accessToken,
+    const jwts: JwtGenerationResultDto = {
+      accessToken,
+      refreshToken,
     };
+
+    // Store tokens in the cache
+    const cachedTokens: string = await this.cacheManager.get(user.email);
+    if (cachedTokens) {
+      await this.cacheManager.del(user.email);
+    }
+    await this.cacheManager.set(user.email, jwts, this.JWT_REFRESH_TTL);
+
+    return jwts;
+  }
+
+  /**
+   * Refreshes both access and potentially the refresh token using a valid refresh token.
+   * This method ensures that the provided token is specifically a refresh token and not just any JWT,
+   * by verifying a designated flag in the token's payload. It then issues new tokens accordingly.
+   *
+   * @example
+   * // refreshToken usage:
+   * const refreshTokenResult = await authService.refreshToken({
+   *  token: 'refresh.token.jwt'
+   * });
+   * console.log(refreshTokenResult); // Expected result: { accessToken, refreshToken } or { isValid: false, message: ... }
+   * 
+   * @param {JwtDto} dto The data transfer object containing the refresh token.
+   * @returns {Promise<JwtGenerationResultDto | JwtValidationResultDto>} A result object containing the new JWTs.
+   */
+  async refreshToken(dto: JwtDto): Promise<JwtGenerationResultDto | JwtValidationResultDto> {
+    try {
+      const oldPayload = this.jwtService.verify(dto.token);
+
+      // Retrieve the refresh token from the cache
+      const oldCachedTokens: JwtGenerationResultDto = await this.cacheManager.get(oldPayload.email);
+      const oldCachedRefreshToken: string = oldCachedTokens.refreshToken;
+
+      const oldCachedPayload = this.jwtService.verify(oldCachedRefreshToken);
+
+      // Ensure the token is a refresh token
+      if (!oldCachedRefreshToken || !oldCachedPayload.isRefreshToken || oldCachedRefreshToken !== dto.token) {
+        throw new NotRefreshTokenError();
+      }
+
+      // Delete the old refresh token from the cache
+      await this.cacheManager.del(oldCachedPayload.email);
+
+      const payload = { email: oldCachedPayload.email, sub: oldCachedPayload.sub };
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '12h' });
+      const refreshToken = this.jwtService.sign({ isRefreshToken: true, ...payload }, { expiresIn: '1d' });
+
+      const jwts: JwtGenerationResultDto = {
+        accessToken,
+        refreshToken,
+      };
+
+      // Store the new refresh token in the cache
+      const cachedJwts: string = await this.cacheManager.get(oldCachedPayload.email);
+      if (cachedJwts) {
+        await this.cacheManager.del(oldCachedPayload.email);
+      }
+      await this.cacheManager.set(oldCachedPayload.email, jwts, this.JWT_REFRESH_TTL);
+
+      return jwts;
+    } catch (err) {
+      return {
+        isValid: false,
+        message: this.getTokenErrorMessage(err),
+      };
+    }
   }
 
   /**
@@ -117,11 +194,18 @@ export class AuthService {
    * 
    * @async
    * @param {JwtDto} dto The data transfer object containing the JWT token to be validated.
-   * @returns {Promise<JwtResultDto>} A result object indicating the validity of the token.
+   * @returns {Promise<JwtValidationResultDto>} A result object indicating the validity of the token.
    */
-  async validateToken(dto: JwtDto): Promise<JwtResultDto> {
+  async validateToken(dto: JwtDto): Promise<JwtValidationResultDto> {
     try {
-      this.jwtService.verify(dto.token);
+      const payload = this.jwtService.verify(dto.token);
+      const cachedTokens: JwtGenerationResultDto = await this.cacheManager.get(payload.email);
+      const cachedAccessToken: string = cachedTokens.accessToken;
+
+      if (payload.isRefreshToken || cachedAccessToken !== dto.token) {
+        throw new NotAccessTokenError();
+      }
+
       return {
         isValid: true,
         message: 'Token is valid',
@@ -135,19 +219,25 @@ export class AuthService {
   }
 
   /**
-   * Determines the appropriate error message for a JWT validation error.
+   * Determines the appropriate error message for a JWT validation error based on the specific type of JWT error encountered.
+   *
+   * @example
+   * // getTokenErrorMessage usage:
+   * const errorMessage = getTokenErrorMessage(new TokenExpiredError());
+   * console.log(errorMessage); // Expected result: 'Token expired'
    * 
    * @private
-   * @param {TokenExpiredError | JsonWebTokenError} err The error encountered during JWT validation.
-   * @returns {string} A user-friendly error message.
+   * @param {Error} err The error encountered during JWT validation, which can be one of several types defined in the JWT handling strategy.
+   * @returns {string} A user-friendly error message tailored to the specific error, enhancing error feedback in client interactions.
    */
-  private getTokenErrorMessage(err: TokenExpiredError | JsonWebTokenError): string {
-    if (err instanceof TokenExpiredError) {
-      return 'Token expired';
-    } else if (err instanceof JsonWebTokenError) {
-      return 'Invalid token';
-    } else {
-      return 'Token verification failed';
-    }
+  private getTokenErrorMessage(err: Error): string {
+    const errorMessages: { [key: string]: string } = {
+      'TokenExpiredError': 'Token expired',
+      'JsonWebTokenError': 'Invalid token',
+      'NotRefreshTokenError': err.message,
+      'NotAccessTokenError': err.message,
+    };
+
+    return errorMessages[err.name] || 'Token verification failed';
   }
 }
