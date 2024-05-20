@@ -1,4 +1,4 @@
-#![cfg_attr(not(target_family = "unix"), allow(unused_imports))]
+#![cfg(target_family = "unix")]
 use std::path::{Path, PathBuf};
 use std::future::Future;
 use tokio::fs;
@@ -13,7 +13,6 @@ use grpc_vision_svc::proto::FILE_DESCRIPTOR_SET;
 use grpc_vision_svc::proto::computer_vision_server::ComputerVisionServer;
 use grpc_vision_svc::service_impl::ComputerVisionSvc;
 
-#[cfg(target_family = "unix")]
 pub async fn create_server_and_channel() -> (impl Future<Output = ()>, Channel) {
     let socket: NamedTempFile = NamedTempFile::new().unwrap();
     let socket: TempPath = socket.into_temp_path();
@@ -32,7 +31,6 @@ pub async fn create_server_and_channel() -> (impl Future<Output = ()>, Channel) 
     (serve_future, channel)
 }
 
-#[cfg(target_family = "unix")]
 async fn create_server(stream: UnixListenerStream) {
     let server: ComputerVisionServer<ComputerVisionSvc> =
         ComputerVisionServer::new(ComputerVisionSvc::default());
@@ -50,7 +48,6 @@ async fn create_server(stream: UnixListenerStream) {
         .expect("Server failed to start")
 }
 
-#[cfg(target_family = "unix")]
 async fn create_channel<P: AsRef<Path>>(socket: P) -> Result<Channel, Error> {
     let socket: PathBuf = socket.as_ref().to_owned();
 

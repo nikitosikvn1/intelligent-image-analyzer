@@ -1,3 +1,4 @@
+#![cfg(target_family = "unix")]
 mod common;
 
 use tokio_stream::{StreamExt, Once};
