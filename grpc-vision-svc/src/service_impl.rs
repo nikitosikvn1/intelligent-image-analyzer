@@ -13,6 +13,7 @@ type ResponseResult<T> = Result<Response<T>, Status>;
 #[derive(Debug)]
 pub struct ComputerVisionSvc {}
 
+#[allow(clippy::derivable_impls)] // Temp
 impl Default for ComputerVisionSvc {
     fn default() -> Self {
         Self {}

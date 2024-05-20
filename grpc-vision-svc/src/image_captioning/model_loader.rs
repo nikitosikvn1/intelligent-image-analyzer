@@ -102,11 +102,11 @@ impl ModelLoaderApi for Api {
     type Repo = ApiRepo;
 
     fn repo(&self, repo: Repo) -> Self::Repo {
-        Api::repo(&self, repo)
+        Api::repo(self, repo)
     }
 
     fn model(&self, model_id: String) -> Self::Repo {
-        Api::model(&self, model_id)
+        Api::model(self, model_id)
     }
 }
 
@@ -121,7 +121,7 @@ pub trait ModelLoaderApiRepo {
 #[cfg(not(tarpaulin_include))]
 impl ModelLoaderApiRepo for ApiRepo {
     fn get(&self, filename: &str) -> Result<PathBuf, ApiError> {
-        ApiRepo::get(&self, filename)
+        ApiRepo::get(self, filename)
     }
 }
 

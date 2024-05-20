@@ -52,10 +52,10 @@ pub fn select_computing_device(cpu: bool, utils: &impl DeviceUtils) -> Result<De
         return Ok(Device::Cpu);
     }
     if utils.cuda_is_available() {
-        return Ok(Device::new_cuda(0)?);
+        return Device::new_cuda(0);
     }
     if utils.metal_is_available() {
-        return Ok(Device::new_metal(0)?);
+        return Device::new_metal(0);
     }
     if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
         tracing::info!(
