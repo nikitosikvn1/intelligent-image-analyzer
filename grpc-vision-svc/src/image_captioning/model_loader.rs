@@ -10,18 +10,18 @@ use hf_hub::api::sync::{Api, ApiRepo, ApiError};
 #[cfg(test)]
 use mockall::automock;
 
-/// [`ModelLoaderError`] is an enumeration of potential errors that can occur 
-/// during the model loading process. It includes API errors, I/O errors, 
-/// and parsing errors. Each variant wraps the underlying error for further 
+/// [`ModelLoaderError`] is an enumeration of potential errors that can occur
+/// during the model loading process. It includes API errors, I/O errors,
+/// and parsing errors. Each variant wraps the underlying error for further
 /// inspection if necessary.
 ///
-/// * `ApiError`: This variant is used when an error occurs while interacting 
+/// * `ApiError`: This variant is used when an error occurs while interacting
 ///   with the API during the model loading process.
-/// * `IoError`: This variant is used when an I/O error occurs, for example, 
+/// * `IoError`: This variant is used when an I/O error occurs, for example,
 ///   when reading the model configuration file.
-/// * `ParseError`: This variant is used when an error occurs while parsing 
+/// * `ParseError`: This variant is used when an error occurs while parsing
 ///   the model configuration file.
-/// 
+///
 /// Each variant uses the `#[from]` attribute to automatically implement the [`From`] trait,
 /// allowing for easy conversion from the wrapped error types to [`ModelLoaderError`].
 #[derive(Error, Debug)]
@@ -200,7 +200,10 @@ impl<T: ModelLoaderApi> ModelLoader<T> {
         let model_path: PathBuf = api.get(&model_cfg.model)?;
         let tokenizer_path: PathBuf = api.get(&model_cfg.tokenizer)?;
 
-        Ok(Model { model_path, tokenizer_path })
+        Ok(Model {
+            model_path,
+            tokenizer_path,
+        })
     }
 
     /// Loads models specified in a TOML configuration file.
@@ -223,7 +226,7 @@ impl<T: ModelLoaderApi> ModelLoader<T> {
     /// let api = Api::new().unwrap();
     /// let loader = ModelLoader::new(api);
     /// let models = loader.load_from_toml("models.toml").unwrap();
-    /// 
+    ///
     /// assert!(models.get("Salesforce/blip-image-captioning-large").is_some());
     /// assert!(models.get("microsoft/kosmos-2-patch14-224").is_some());
     /// ```
@@ -297,8 +300,14 @@ mod tests {
         let loader: ModelLoader<MockModelLoaderApi> = ModelLoader::new(mock_api);
         let model: Model = loader.load(&model_cfg).unwrap();
         // THEN
-        assert_eq!(model.model_path().to_str(), Some("some/path/model.safetensors"));
-        assert_eq!(model.tokenizer_path().to_str(), Some("some/path/tokenizer.json"));
+        assert_eq!(
+            model.model_path().to_str(),
+            Some("some/path/model.safetensors"),
+        );
+        assert_eq!(
+            model.tokenizer_path().to_str(),
+            Some("some/path/tokenizer.json"),
+        );
     }
 
     #[test]
@@ -337,8 +346,14 @@ mod tests {
         let loader: ModelLoader<MockModelLoaderApi> = ModelLoader::new(mock_api);
         let model: Model = loader.load(&model_cfg).unwrap();
         // THEN
-        assert_eq!(model.model_path().to_str(), Some("some/path/model.safetensors"));
-        assert_eq!(model.tokenizer_path().to_str(), Some("some/path/tokenizer.json"));
+        assert_eq!(
+            model.model_path().to_str(),
+            Some("some/path/model.safetensors"),
+        );
+        assert_eq!(
+            model.tokenizer_path().to_str(),
+            Some("some/path/tokenizer.json"),
+        );
     }
 
     #[test]
@@ -370,7 +385,9 @@ mod tests {
         let result: Result<Model> = loader.load(&model_cfg);
         // THEN
         assert!(result.is_err());
-        assert!(matches!(result, Err(ModelLoaderError::ApiError(ApiError::IoError(ref e))) if e.kind() == ErrorKind::PermissionDenied));
+        assert!(
+            matches!(result, Err(ModelLoaderError::ApiError(ApiError::IoError(ref e))) if e.kind() == ErrorKind::PermissionDenied)
+        );
     }
 
     #[test]
@@ -416,12 +433,24 @@ mod tests {
         assert_eq!(models.len(), 2);
 
         let model_1: &Model = models.get("some-repo/test-model").unwrap();
-        assert_eq!(model_1.model_path().to_str(), Some("some/path/model.safetensors"));
-        assert_eq!(model_1.tokenizer_path().to_str(), Some("some/path/tokenizer.json"));
+        assert_eq!(
+            model_1.model_path().to_str(),
+            Some("some/path/model.safetensors"),
+        );
+        assert_eq!(
+            model_1.tokenizer_path().to_str(),
+            Some("some/path/tokenizer.json"),
+        );
 
         let model_2: &Model = models.get("another-repo/another-model").unwrap();
-        assert_eq!(model_2.model_path().to_str(), Some("some/path/model.safetensors"));
-        assert_eq!(model_2.tokenizer_path().to_str(), Some("some/path/tokenizer.json"));
+        assert_eq!(
+            model_2.model_path().to_str(),
+            Some("some/path/model.safetensors"),
+        );
+        assert_eq!(
+            model_2.tokenizer_path().to_str(),
+            Some("some/path/tokenizer.json"),
+        );
     }
 
     #[test]

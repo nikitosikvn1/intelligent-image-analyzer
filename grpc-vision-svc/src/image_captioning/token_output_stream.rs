@@ -105,7 +105,7 @@ impl TokenOutputStream {
     /// // { "hello": 1, "world": 2, "everybody": 3 }
     /// let tokenizer = Tokenizer::from_file("path/to/tokenizer.json").unwrap();
     /// let mut stream = TokenOutputStream::new(tokenizer);
-    /// 
+    ///
     /// let tokens: [u32; 4] = [1, 2, 1, 3];
     ///
     /// let sent: String = tokens
