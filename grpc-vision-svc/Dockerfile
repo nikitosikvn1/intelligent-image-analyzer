@@ -11,7 +11,7 @@ ARG APP_NAME
 WORKDIR /app
 
 # Install host build dependencies.
-RUN apk add --no-cache clang protobuf lld musl-dev openssl-dev git
+RUN apk add --no-cache clang build-base protobuf lld musl-dev openssl-dev git
 
 ENV OPENSSL_LIB_DIR=/usr/lib
 ENV OPENSSL_INCLUDE_DIR=/usr/include

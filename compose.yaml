@@ -12,41 +12,6 @@ services:
       - 50051:50051
     env_file:
       - ./grpc-vision-svc/.env
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-
-  postgres_db:
-    container_name: postgres-db
-    image: postgres:latest
-    restart: always
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - skynet
-    ports:
-      - 5432:5432
-    env_file:
-      - ./grpc-vision-svc/.env
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-  
-  pgadmin_dashboard:
-    container_name: pgadmin-dashboard
-    image: dpage/pgadmin4:latest
-    restart: always
-    networks:
-      - skynet
-    ports:
-      - "5050:80"
-    env_file:
-      - ./grpc-vision-svc/.env
-
-volumes:
-  db-data:
 
 networks:
   skynet:
