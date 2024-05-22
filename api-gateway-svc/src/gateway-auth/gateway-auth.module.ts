@@ -1,10 +1,7 @@
 import { Module } from '@nestjs/common';
 import { GatewayAuthService } from './gateway-auth.service';
 import { GatewayAuthController } from './gateway-auth.controller';
-import {
-  ClientProxyFactory,
-  Transport,
-} from '@nestjs/microservices';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 
@@ -47,5 +44,6 @@ import * as fs from 'fs';
     },
   ],
   controllers: [GatewayAuthController],
+  exports: [GatewayAuthService],
 })
 export class GatewayAuthModule {}

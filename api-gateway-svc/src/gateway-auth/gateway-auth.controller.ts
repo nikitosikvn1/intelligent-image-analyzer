@@ -4,7 +4,7 @@ import { lastValueFrom } from 'rxjs';
 
 /**
  * GatewayAuthController handles HTTP requests related to user authentication.
- * It defines endpoints for signing up and signing in, validating JWT tokens.
+ * It defines endpoints for signing up, signing in, and validating JWT tokens.
  */
 @Controller('auth')
 export class GatewayAuthController {
@@ -23,11 +23,11 @@ export class GatewayAuthController {
    * @throws {HttpException} If sign-up operation fails.
    */
   @Post('signup')
-  signUp(@Body() data: object): Promise<object> {
+  async signUp(@Body() data: object): Promise<object> {
     try {
-      return lastValueFrom(this.gatewayAuthService.signUp(data));
+      return await lastValueFrom(this.gatewayAuthService.signUp(data));
     } catch (error) {
-      throw new HttpException(error.message, error.status);
+      throw new HttpException(error.message, error.status || 500);
     }
   }
 
@@ -39,11 +39,27 @@ export class GatewayAuthController {
    * @throws {HttpException} If sign-in operation fails.
    */
   @Post('signin')
-  signIn(@Body() data: object): Promise<object> {
+  async signIn(@Body() data: object): Promise<object> {
     try {
-      return lastValueFrom(this.gatewayAuthService.signIn(data));
+      return await lastValueFrom(this.gatewayAuthService.signIn(data));
     } catch (error) {
-      throw new HttpException(error.message, error.status);
+      throw new HttpException(error.message, error.status || 500);
+    }
+  }
+
+  /**
+   * Endpoint for refreshing JWT token.
+   *
+   * @param {object} data Data object containing refresh token.
+   * @returns {Promise<object>} Promise with the result of token refresh operation.
+   * @throws {HttpException} If token refresh operation fails.
+   */
+  @Post('refresh')
+  async refreshToken(@Body() data: object): Promise<object> {
+    try {
+      return await lastValueFrom(this.gatewayAuthService.refreshToken(data));
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 500);
     }
   }
 }

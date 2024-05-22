@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 
 /**
  * GatewayAuthService handles communication with the authentication microservice.
- * It sends requests to authorize and authenticate users, checks whether the jwt token is valid.
+ * It sends requests to authorize and authenticate users, checks whether the
+ * JWT token is valid and refreshes tokens.
  */
 @Injectable()
 export class GatewayAuthService {
@@ -45,5 +46,15 @@ export class GatewayAuthService {
    */
   validateToken(data: object): Observable<object> {
     return this.authService.send({ cmd: 'validate-token' }, data);
+  }
+
+  /**
+   * Sends token refresh request to the authentication microservice.
+   *
+   * @param {object} data Data object containing refresh token.
+   * @returns {Observable<object>} Observable with the result of token refresh operation.
+   */
+  refreshToken(data: object): Observable<object> {
+    return this.authService.send({ cmd: 'refresh-token' }, data);
   }
 }

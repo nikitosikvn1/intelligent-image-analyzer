@@ -4,10 +4,10 @@ import { GatewayGrpcVisionController } from './gateway-grpc-vision.controller';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { resolve } from 'path';
-import { GatewayAuthService } from 'src/gateway-auth/gateway-auth.service';
+import { GatewayAuthModule } from 'src/gateway-auth/gateway-auth.module';
 
 @Module({
-  imports: [GatewayAuthService],
+  imports: [GatewayAuthModule],
   providers: [
     GatewayGrpcVisionService,
     {
