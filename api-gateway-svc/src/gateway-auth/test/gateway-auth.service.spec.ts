@@ -65,4 +65,18 @@ describe('GatewayAuthService', () => {
     expect(result).toEqual(response);
     expect(client.send).toHaveBeenCalledWith({ cmd: 'validate-token' }, data);
   });
+
+  it('should refresh a jwt token', async () => {
+    // Given
+    const data = { token: '' };
+    const response = { status: 'success' };
+    jest.spyOn(client, 'send').mockImplementation(() => of(response));
+
+    // When
+    const result = await lastValueFrom(service.refreshToken(data));
+
+    // Then
+    expect(result).toEqual(response);
+    expect(client.send).toHaveBeenCalledWith({ cmd: 'refresh-token' }, data);
+  });
 });

@@ -17,6 +17,7 @@ describe('GatewayAuthController', () => {
           useValue: {
             signUp: jest.fn().mockReturnValue(of({ success: true })),
             signIn: jest.fn().mockReturnValue(of({ success: true })),
+            refreshToken: jest.fn().mockReturnValue(of({ success: true })),
           },
         },
       ],
@@ -50,6 +51,18 @@ describe('GatewayAuthController', () => {
     expect(service.signIn).toHaveBeenCalledWith(signinData);
   });
 
+  it('should refresh a jwt token', async () => {
+    // Given
+    const refreshData = {};
+
+    // When
+    const result = await controller.refreshToken(refreshData);
+
+    // Then
+    expect(result).toEqual({ success: true });
+    expect(service.refreshToken).toHaveBeenCalledWith(refreshData);
+  });
+
   it('should throw an error when signUp fails', async () => {
     // Given
     const signupData = {};
@@ -62,17 +75,12 @@ describe('GatewayAuthController', () => {
       throw error;
     });
 
-    try {
-      await controller.signUp(signupData);
-    } catch (thrownError) {
-      // Check if signUp method is called with the expected data
-      expect(service.signUp).toHaveBeenCalledWith(signupData);
+    // When
+    const result = controller.signUp(signupData);
 
-      // Check if the thrown error has the expected properties
-      expect(thrownError).toBeInstanceOf(HttpException);
-      expect(errorMessage).toBe(error.message);
-      expect(statusCode).toBe(error.getStatus());
-    }
+    //Then
+    await expect(result).rejects.toThrow(error);
+    expect(service.signUp).toHaveBeenCalledWith(signupData);
   });
 
   it('should throw an error when signIn fails', async () => {
@@ -87,18 +95,31 @@ describe('GatewayAuthController', () => {
       throw error;
     });
 
-    try {
-      // When
-      await controller.signIn(signinData);
-    } catch (thrownError) {
-      // Then
-      // Check if signIn method is called with the expected data
-      expect(service.signIn).toHaveBeenCalledWith(signinData);
+    // When
+    const result = controller.signIn(signinData);
 
-      // Check if the thrown error has the expected properties
-      expect(thrownError).toBeInstanceOf(HttpException);
-      expect(errorMessage).toBe(error.message);
-      expect(statusCode).toBe(error.getStatus());
-    }
+    // Then
+    await expect(result).rejects.toThrow(error);
+    expect(service.signIn).toHaveBeenCalledWith(signinData);
+  });
+
+  it('should throw an error when refresh token fails', async () => {
+    // Given
+    const refreshData = {};
+
+    const errorMessage = 'Refresh token error';
+    const statusCode = 500;
+    const error: HttpException = new HttpException(errorMessage, statusCode);
+
+    jest.spyOn(service, 'refreshToken').mockImplementationOnce(() => {
+      throw error;
+    });
+
+    // When
+    const result = controller.refreshToken(refreshData);
+
+    // Then
+    await expect(result).rejects.toThrow(error);
+    expect(service.refreshToken).toHaveBeenCalledWith(refreshData);
   });
 });
