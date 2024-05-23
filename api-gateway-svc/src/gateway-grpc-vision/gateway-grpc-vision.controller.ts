@@ -14,8 +14,8 @@ import {
 } from './proto-types/computer_vision';
 import { GatewayGrpcVisionService } from './gateway-grpc-vision.service';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { lastValueFrom } from 'rxjs';
-import { JwtAuthGuard } from 'src/gateway-auth/guards/jwt-auth.guard';
+import { lastValueFrom, toArray } from 'rxjs';
+import { JwtAuthGuard } from '../gateway-auth/guards/jwt-auth.guard';
 
 /**
  * GatewayGrpcVisionController handles HTTP requests for image processing tasks.
@@ -68,8 +68,8 @@ export class GatewayGrpcVisionController {
         model,
       }));
 
-      const responses = await lastValueFrom(
-        this.gatewayVisionService.processImageBatch(requests),
+      const responses: ImgProcResponse[] = await lastValueFrom(
+        this.gatewayVisionService.processImageBatch(requests).pipe(toArray()),
       );
       return responses;
     }

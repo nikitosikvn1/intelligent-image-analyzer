@@ -5,7 +5,7 @@ import {
   ImgProcRequest,
   ImgProcResponse,
 } from './proto-types/computer_vision';
-import { lastValueFrom, Observable, ReplaySubject } from 'rxjs';
+import { lastValueFrom, Observable, ReplaySubject, toArray } from 'rxjs';
 
 /**
  * GatewayGrpcVisionService provides methods to interact with the gRPC-based
@@ -53,7 +53,6 @@ export class GatewayGrpcVisionService implements OnModuleInit {
   processImageBatch(data: ImgProcRequest[]): Observable<ImgProcResponse> {
     const subject = new ReplaySubject<ImgProcRequest>();
 
-    // Emulate a stream by pushing each request data and then completing the stream.
     data.forEach((request) => subject.next(request));
     subject.complete();
 
