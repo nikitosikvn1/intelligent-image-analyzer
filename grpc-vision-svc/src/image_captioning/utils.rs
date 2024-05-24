@@ -43,15 +43,15 @@ impl DeviceUtils for DefaultDeviceUtils {
 ///
 /// ```
 /// // Select CPU as the computing device.
-/// let device: Device = select_computing_device(true, &DefaultDeviceUtils).unwrap();
+/// let device: Device = device(true, &DefaultDeviceUtils).unwrap();
 /// assert!(device.is_cpu());
 ///
 /// // Select GPU (CUDA) as the computing device.
 /// // This example assumes that the `cuda` feature is enabled.
-/// let device: Device = select_computing_device(false, &DefaultDeviceUtils).unwrap();
+/// let device: Device = device(false, &DefaultDeviceUtils).unwrap();
 /// assert!(matches!(device, Device::Cuda(_)));
 /// ```
-pub fn select_computing_device(cpu: bool, utils: &impl DeviceUtils) -> Result<Device> {
+pub fn device(cpu: bool, utils: &impl DeviceUtils) -> Result<Device> {
     if cpu {
         return Ok(Device::Cpu);
     }
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn test_select_computing_device_cpu_preference() {
         // WHEN
-        let device: Device = select_computing_device(true, &DefaultDeviceUtils).unwrap();
+        let device: Device = device(true, &DefaultDeviceUtils).unwrap();
         // THEN
         assert!(device.is_cpu());
     }
@@ -174,7 +174,7 @@ mod tests {
             .times(1)
             .return_const(false);
         // WHEN
-        let device: Device = select_computing_device(false, &mock_device_utils).unwrap();
+        let device: Device = device(false, &mock_device_utils).unwrap();
         // THEN
         assert!(device.is_cpu());
     }
@@ -193,7 +193,7 @@ mod tests {
                 .expect_metal_is_available()
                 .times(0);
             // WHEN
-            let device: Device = select_computing_device(false, &mock_device_utils).unwrap();
+            let device: Device = device(false, &mock_device_utils).unwrap();
             // THEN
             assert!(device.is_cuda());
         } else {
@@ -216,7 +216,7 @@ mod tests {
                 .times(1)
                 .return_const(true);
             // WHEN
-            let device: Device = select_computing_device(false, &mock_device_utils).unwrap();
+            let device: Device = device(false, &mock_device_utils).unwrap();
             // THEN
             assert!(device.is_metal());
         } else {
