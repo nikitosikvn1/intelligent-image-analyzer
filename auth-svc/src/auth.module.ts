@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
+import { CacheModule } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Module({
   imports: [
@@ -32,8 +34,12 @@ import { JwtModule } from '@nestjs/jwt';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '120s' },
+        signOptions: { expiresIn: '12h' },
       }),
+    }),
+    // Cache module is used to store refresh JWT to make them disposable
+    CacheModule.register({
+      isGlobal: true,
     }),
   ],
   controllers: [AuthController],
