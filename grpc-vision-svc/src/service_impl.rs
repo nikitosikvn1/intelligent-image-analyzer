@@ -21,7 +21,7 @@ pub struct ComputerVisionSvc {
 impl ComputerVisionSvc {
     pub fn new(models: &Models, device: Device) -> CandleResult<Self> {
         Ok(Self {
-            processor: Arc::new(ImageProcessor::new(&models, device)?),
+            processor: Arc::new(ImageProcessor::new(models, device)?),
             semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_REQUESTS)),
         })
     }

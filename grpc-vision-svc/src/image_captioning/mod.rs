@@ -115,7 +115,7 @@ impl ImageProcessor {
             let context_size: usize = if index > 0 { 1 } else { token_ids.len() };
             let start_pos: usize = token_ids.len().saturating_sub(context_size);
             let input_ids: Tensor = Tensor::new(&token_ids[start_pos..], &self.device)?.unsqueeze(0)?;
-            let logits: Tensor = model.text_decoder_forward(&input_ids, &image_embeds)?.squeeze(0)?;
+            let logits: Tensor = model.text_decoder_forward(&input_ids, image_embeds)?.squeeze(0)?;
             let logits: Tensor = logits.get(logits.dim(0)? - 1)?;
             let token: u32 = logits_processor.sample(&logits)?;
             if token == SEP_TOKEN_ID {
