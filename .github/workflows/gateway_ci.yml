@@ -23,6 +23,16 @@ jobs:
         run: npm install
         working-directory: ./api-gateway-svc
 
+      - name: Install protobuf
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Generate grpc types
+        run: npm run generate:proto:types
+        working-directory: ./api-gateway-svc
+
       - name: Run Tests
         run: npm run test
         working-directory: ./api-gateway-svc
+  
