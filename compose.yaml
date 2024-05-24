@@ -6,12 +6,15 @@ services:
     build:
       context: ./grpc-vision-svc
       target: final
+    volumes:
+      - /home/${USER}/.cache/huggingface/:/nonexistent/.cache/huggingface/
     networks:
       - skynet
     ports:
       - 50051:50051
-    env_file:
-      - ./grpc-vision-svc/.env
+    environment:
+      - RUST_LOG=INFO
+      - VISION_ADDR=[::]:50051
 
 networks:
   skynet:

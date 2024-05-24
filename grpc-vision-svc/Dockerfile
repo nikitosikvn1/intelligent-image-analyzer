@@ -50,13 +50,15 @@ RUN adduser \
     --gecos "" \
     --home "/nonexistent" \
     --shell "/sbin/nologin" \
-    --no-create-home \
     --uid "${UID}" \
     appuser
 USER appuser
 
+ENV VISION_MODELS_PATH=/bin/models.toml
+
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/
+COPY ./models.toml /bin/
 
 # Expose the port that the application listens on.
 EXPOSE 50051

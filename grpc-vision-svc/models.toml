@@ -1,0 +1,9 @@
+[[model]]
+repository = "Salesforce/blip-image-captioning-large"
+model = "model.safetensors"
+tokenizer = "tokenizer.json"
+
+[[model]]
+repository = "lmz/candle-blip"
+model = "blip-image-captioning-large-q80.gguf"
+tokenizer = "tokenizer.json"
