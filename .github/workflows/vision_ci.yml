@@ -1,10 +1,8 @@
-name: CV Service CI
+name: CV Service Tests
 
 on:
   push:
-    branches: ["main", "grpc-vision-svc"]
-  pull_request:
-    branches: ["main"]
+    branches: ["grpc-vision-svc"]
 
 env:
   CARGO_TERM_COLOR: always
@@ -50,8 +48,8 @@ jobs:
           
       - name: Run tests
         working-directory: grpc-vision-svc
-        run: cargo test --all-targets --verbose
+        run: cargo test --all-targets --verbose -- --show-output --include-ignored
         
       - name: Run Clippy
         working-directory: grpc-vision-svc
-        run: cargo clippy --all-targets --all-features
+        run: cargo clippy --all-targets

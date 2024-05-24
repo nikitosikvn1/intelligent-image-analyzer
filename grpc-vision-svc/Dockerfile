@@ -11,7 +11,7 @@ ARG APP_NAME
 WORKDIR /app
 
 # Install host build dependencies.
-RUN apk add --no-cache clang protobuf lld musl-dev openssl-dev git
+RUN apk add --no-cache clang build-base protobuf lld musl-dev openssl-dev git
 
 ENV OPENSSL_LIB_DIR=/usr/lib
 ENV OPENSSL_INCLUDE_DIR=/usr/include
@@ -50,13 +50,15 @@ RUN adduser \
     --gecos "" \
     --home "/nonexistent" \
     --shell "/sbin/nologin" \
-    --no-create-home \
     --uid "${UID}" \
     appuser
 USER appuser
 
+ENV VISION_MODELS_PATH=/bin/models.toml
+
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/
+COPY ./models.toml /bin/
 
 # Expose the port that the application listens on.
 EXPOSE 50051

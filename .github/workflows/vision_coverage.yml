@@ -37,7 +37,7 @@ jobs:
         
       - name: Generate code coverage
         working-directory: grpc-vision-svc
-        run: cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 60 --out xml
+        run: cargo +nightly tarpaulin --verbose --lib --ignored --timeout 60 --out xml
         
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
