@@ -3,7 +3,7 @@ import {
   ImgProcRequest,
   ImgProcResponse,
   ModelType,
-} from '../proto-types/computer_vision';
+} from '../proto/computer_vision';
 import { GatewayGrpcVisionService } from '../gateway-grpc-vision.service';
 import { JwtAuthGuard } from '../../gateway-auth/guards/jwt-auth.guard';
 import { GatewayAuthService } from '../../gateway-auth/gateway-auth.service';

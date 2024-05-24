@@ -4,8 +4,8 @@ import {
   ComputerVisionClient,
   ImgProcRequest,
   ImgProcResponse,
-} from './proto-types/computer_vision';
-import { lastValueFrom, Observable, ReplaySubject, toArray } from 'rxjs';
+} from './proto/computer_vision';
+import { lastValueFrom, Observable, ReplaySubject } from 'rxjs';
 
 /**
  * GatewayGrpcVisionService provides methods to interact with the gRPC-based

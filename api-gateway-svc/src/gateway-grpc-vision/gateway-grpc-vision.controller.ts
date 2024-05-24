@@ -11,7 +11,7 @@ import {
   ImgProcRequest,
   ImgProcResponse,
   ModelType,
-} from './proto-types/computer_vision';
+} from './proto/computer_vision';
 import { GatewayGrpcVisionService } from './gateway-grpc-vision.service';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { lastValueFrom, toArray } from 'rxjs';

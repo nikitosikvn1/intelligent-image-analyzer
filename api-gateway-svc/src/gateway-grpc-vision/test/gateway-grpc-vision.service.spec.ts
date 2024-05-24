@@ -5,7 +5,7 @@ import {
   ComputerVisionClient,
   ImgProcRequest,
   ImgProcResponse,
-} from '../proto-types/computer_vision';
+} from '../proto/computer_vision';
 import { of, toArray } from 'rxjs';
 import { lastValueFrom } from 'rxjs';
 
