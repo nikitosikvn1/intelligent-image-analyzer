@@ -32,7 +32,7 @@ jobs:
         id: pages
         uses: actions/configure-pages@v4
       
-        # JS Docs
+        # Auth svc docs
       - name: Install dependencies
         run: npm install
         working-directory: ./auth-svc
@@ -40,6 +40,16 @@ jobs:
       - name: Generate Documentation
         run: npx @compodoc/compodoc -p tsconfig.json -d docs
         working-directory: ./auth-svc
+
+      # Api gateway svc docs
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./api-gateway-svc
+      
+      - name: Generate Documentation
+        run: npx @compodoc/compodoc -p tsconfig.json -d docs
+        working-directory: ./api-gateway-svc
+
         # Rust Docs
       - name: Clean docs folder
         working-directory: grpc-vision-svc
@@ -47,7 +57,7 @@ jobs:
       
       - name: Build docs
         working-directory: grpc-vision-svc
-        run: cargo doc --no-deps
+        run: cargo doc
       
       - name: Remove lock file
         working-directory: grpc-vision-svc
@@ -57,7 +67,8 @@ jobs:
         run: |
           echo '<h1>Documentation</h1>' > index.html
           echo '<ul>' >> index.html
-          echo '<li><a href="auth-svc/index.html"> Auth service (JS)</a></li>' >> index.html
+          echo '<li><a href="api-gateway-svc/index.html">API Gateway Service (TS)</a></li>' >> index.html
+          echo '<li><a href="auth-svc/index.html"> Auth service (TS)</a></li>' >> index.html
           echo '<li><a href="grpc-vision-svc/grpc_vision_svc/index.html">ComputerVision Service (Rust)</a></li>' >> index.html
           echo '</ul>' >> index.html
       
@@ -65,6 +76,7 @@ jobs:
         run: |
           mkdir upload
           cp -r auth-svc/docs upload/auth-svc
+          cp -r api-gateway-svc/docs upload/api-gateway-svc
           cp -r grpc-vision-svc/target/doc upload/grpc-vision-svc
           cp index.html upload/
       
