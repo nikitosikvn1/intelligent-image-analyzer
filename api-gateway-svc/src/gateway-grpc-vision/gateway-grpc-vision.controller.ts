@@ -16,6 +16,7 @@ import { GatewayGrpcVisionService } from './gateway-grpc-vision.service';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { lastValueFrom, toArray } from 'rxjs';
 import { JwtAuthGuard } from '../gateway-auth/guards/jwt-auth.guard';
+import { Express } from 'express';
 
 /**
  * GatewayGrpcVisionController handles HTTP requests for image processing tasks.

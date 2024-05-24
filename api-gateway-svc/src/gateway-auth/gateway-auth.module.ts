@@ -26,7 +26,7 @@ import * as fs from 'fs';
         return ClientProxyFactory.create({
           transport: Transport.RMQ,
           options: {
-            urls: [`amqp://${USER}:${PASS}@${HOST}`],
+            urls: [`amqps://${USER}:${PASS}@${HOST}`],
             queue: QUEUE,
             queueOptions: {
               durable: true,

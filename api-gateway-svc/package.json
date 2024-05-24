@@ -30,6 +30,7 @@
     "@nestjs/platform-express": "^10.3.8",
     "amqp-connection-manager": "^4.1.14",
     "amqplib": "^0.10.3",
+    "express": "^4.19.2",
     "grpc_tools_node_protoc_ts": "^5.3.3",
     "grpc-tools": "^1.12.4",
     "rate-limiter-flexible": "^5.0.3",
