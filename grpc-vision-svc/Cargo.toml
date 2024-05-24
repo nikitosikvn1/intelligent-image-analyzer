@@ -6,10 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.86"
 candle-core = { version = "0.5.0", optional = true }
 candle-nn = { version = "0.5.0", optional = true }
 candle-transformers = { version = "0.5.0", optional = true}
 hf-hub = "0.3.2"
+hyper = "1.3.1"
 image = "0.25.1"
 once_cell = "1.19.0"
 prost = "0.12.3"
@@ -19,7 +21,7 @@ tokenizers = { version = "0.15.2", features = ["hf-hub"] }
 tokio = { version = "1.36.0", features = ["full"] }
 tokio-stream = "0.1.15"
 toml = "0.8.12"
-tonic = { version = "0.11.0", features = ["tls"] }
+tonic = { version = "0.11.0", features = ["tls", "gzip"] }
 tonic-reflection = "0.11.0"
 tower = "0.4.13"
 tracing = "0.1.40"
