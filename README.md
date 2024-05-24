@@ -27,7 +27,7 @@ Acts as the entry point for all client requests, routing them to the appropriate
 
 **Authentication Service Integration**:
   - ***Purpose***: Handle user authentication tasks.
-  - ***Implementation***: Utilizes RabbitMQ for secure messaging between the Gateway and Auth services. The Gateway sends user-related requests (registration, login, token validation) to the Auth Service, which processes these requests and manages user data and authentication logic.
+  - ***Implementation***: Utilizes RabbitMQ with SSL/TLS connections for secure messaging between the Gateway and Auth services. The Gateway sends user-related requests (registration, login, token validation) to the Auth Service, which processes these requests and manages user data and authentication logic.
 
 **Vision Service Integration**:
   - ***Purpose***: Handle image uploads and retrieve their descriptions.
@@ -38,7 +38,7 @@ Manages user authentication and authorization tasks.
 
 **Gateway Service Integration**:
   - ***Purpose***: Receives authentication-related requests from the Gateway Service and processes them accordingly.
-  - ***Implementation***: Utilizes RabbitMQ for secure messaging between the Authentication and Gateway services. RabbitMQ enables reliable communication, ensuring that user authentication requests are handled securely and efficiently.
+  - ***Implementation***: Utilizes RabbitMQ with SSL/TLS connections for secure messaging between the Authentication and Gateway services. RabbitMQ enables reliable communication, ensuring that user authentication requests are handled securely and efficiently.
 
 **Functionality**:
   - ***User Registration***:
@@ -89,93 +89,20 @@ Manages image analysis and description generation tasks.
 Example of certificates location:
 ```plaintext
 ./certs
-    ├── ca.key
     ├── ca.pem
-    ├── ca.srl
-    ├── server_cert.pem
-    ├── server_key.pem
-    ├── server.csr
     ├── server.key
     ├── server.pem
 ./api-gateway-svc/cert
     ├── ca.pem
     ├── gateway_cert.pem
-    ├── gateway_csr.pem
     ├── gateway_key.pem
 ./auth-svc/cert
     ├── ca.pem
     ├── auth_cert.pem
-    ├── auth_csr.pem
     ├── auth_key.pem
 ```
 3. Set Up Environment Variables:
-- Create a `.env` file in the root directory of the project and add the following environment variables:
-```env
-# RabbitMQ configuration variables
-RABBITMQ_DEFAULT_USER=username
-RABBITMQ_DEFAULT_PASS=password
-RABBITMQ_USER=username
-RABBITMQ_PASS=password
-RABBITMQ_HOST=rmq-host:port
-RABBITMQ_QUEUE=auth_queue_name
-RABBITMQ_CERT_PATH=path (for example: "../certs/client.pem")
-RABBITMQ_KEY_PATH=path (for example: "../certs/client.key")
-RABBITMQ_PASSPHRASE=passphrase
-RABBITMQ_CA_PATH=path (for example: "../certs/ca.pem")
-
-# PGSQL configuration variables
-DB_HOST=db_host
-DB_PORT=db_port
-DB_USERNAME=db_username
-DB_PASSWORD=db_password
-DB_NAME=db_name
-```
-
-- Create a `.env` file in the api-gateway-svc directory and add the following environment variables:
-```env
-# RabbitMQ configuration
-RABBITMQ_DEFAULT_USER=username
-RABBITMQ_DEFAULT_PASS=password
-RABBITMQ_USER=username
-RABBITMQ_PASS=password
-RABBITMQ_HOST=rmq-host:port
-RABBITMQ_QUEUE=auth_queue_name
-RABBITMQ_PASSPHRASE=passphrase
-
-# Grpc configuration
-VISION_HOST=grpc-host
-VISION_PORT=grpc-port
-
-# SSL certificates paths
-RABBITMQ_CERT_PATH=path (for example: ./cert/gateway_cert.pem)
-RABBITMQ_KEY_PATH=path (for example: ./cert/gateway_key.pem)
-RABBITMQ_CA_PATH=path (for example: ../certs/ca.pem)
-```
-
-- Create a `.env` file in the auth-svc directory and add the following environment variables:
-```env
-# RabbitMQ configuration variables
-RABBITMQ_DEFAULT_USER=username
-RABBITMQ_DEFAULT_PASS=password
-RABBITMQ_USER=username
-RABBITMQ_PASS=password
-RABBITMQ_HOST=rmq-host:port
-RABBITMQ_QUEUE=auth_queue_name
-RABBITMQ_CERT_PATH=path (for example: ./cert/auth_cert.pem)
-RABBITMQ_KEY_PATH=path (for example: ./cert/auth_key.pem)
-RABBITMQ_PASSPHRASE=password
-RABBITMQ_CA_PATH=path (for example: ./cert/ca.pem)
-
-# PGSQL configuration variables
-DB_HOST=db_host
-DB_PORT=db_port
-DB_USERNAME=db_username
-DB_PASSWORD=db_password
-DB_NAME=db_name
-
-# JWT configuration variables
-JWT_SECRET=jwt_secret
-```
+- Create a .env file in the root directory, api-gateway-svc and auth-svc directories based on the .env.example file in each respective directory.
 
 ## Running
 Run the following command in the root directory to start the RabbitMQ, PostgreSQL, api-gateway-svc, auth-svc and grpc-vision-svc containers:
