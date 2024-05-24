@@ -10,8 +10,6 @@ use tonic_reflection::server::ServerReflectionServer;
 use tempfile::{NamedTempFile, TempPath};
 
 use grpc_vision_svc::proto::FILE_DESCRIPTOR_SET;
-use grpc_vision_svc::proto::computer_vision_server::ComputerVisionServer;
-use grpc_vision_svc::service_impl::ComputerVisionSvc;
 
 pub async fn create_server_and_channel() -> (impl Future<Output = ()>, Channel) {
     let socket: NamedTempFile = NamedTempFile::new().unwrap();
@@ -32,8 +30,8 @@ pub async fn create_server_and_channel() -> (impl Future<Output = ()>, Channel) 
 }
 
 async fn create_server(stream: UnixListenerStream) {
-    let server: ComputerVisionServer<ComputerVisionSvc> =
-        ComputerVisionServer::new(ComputerVisionSvc::default());
+    // let server: ComputerVisionServer<ComputerVisionSvc> =
+    //     ComputerVisionServer::new(ComputerVisionSvc::new(&models, device).unwrap());
 
     let reflection_svc: ServerReflectionServer<_> = ReflectionBuilder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
@@ -42,7 +40,7 @@ async fn create_server(stream: UnixListenerStream) {
 
     Server::builder()
         .add_service(reflection_svc)
-        .add_service(server)
+        // .add_service(server)
         .serve_with_incoming(stream)
         .await
         .expect("Server failed to start")
