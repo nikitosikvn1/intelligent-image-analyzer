@@ -1,3 +1,8 @@
+//! This module provides the [`ComputerVisionSvc`] struct and its associated methods for image processing.
+//! 
+//! The primary functionality includes handling single and batch image processing requests using gRPC.
+//! The [`ComputerVisionSvc`] utilizes an [`ImageProcessor`] to perform the actual processing of images
+//! and a semaphore to limit the number of concurrent requests for efficient resource management.
 use std::sync::Arc;
 use tokio::task::{self, JoinError};
 use tokio::sync::{mpsc, Semaphore, OwnedSemaphorePermit};
