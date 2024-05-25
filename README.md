@@ -6,6 +6,9 @@
     </p>
 </div>
 
+## Demonstration
+![Demonstration](./assets/demonstration.gif)
+
 ## Introduction
 The Intelligent Image Analyzer is a microservices-based project developed for image analysis. It is designed to offer scalable, efficient, and robust image processing solutions using modern technologies. The project integrates microservices to handle different aspects of image analysis, ensuring flexibility and ease of maintenance. This document will guide you through the project's architecture, installation process, usage.
 
