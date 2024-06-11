@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { AuthModule } from './auth.module';
+import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import * as fs from 'fs';
@@ -10,7 +10,7 @@ import * as fs from 'fs';
  * establishing a secure connection, and starting the microservice.
  * 
  * The `bootstrap` function performs the following steps:
- * - Creates a NestJS application instance based on `AuthModule`.
+ * - Creates a NestJS application instance based on `AppModule`.
  * - Retrieves RabbitMQ configuration from environment variables via `ConfigService`.
  * - Configures and connects the application to RabbitMQ with SSL/TLS security.
  * - Starts the RabbitMQ microservice to begin processing messages.
@@ -20,8 +20,8 @@ import * as fs from 'fs';
  * @returns {Promise<void>} A promise that resolves when the application is fully initialized and the microservices have started.
  */
 async function bootstrap() {
-  // Initializes the NestJS application with the AuthModule.
-  const app = await NestFactory.create(AuthModule);
+  // Initializes the NestJS application with the AppModule.
+  const app = await NestFactory.create(AppModule);
 
   // Accesses the application's configuration settings.
   const configService = app.get(ConfigService);
