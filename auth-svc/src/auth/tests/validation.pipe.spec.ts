@@ -1,6 +1,6 @@
 import { BadRequestException, ValidationPipe } from "@nestjs/common";
 import { JwtDto, JwtGenerationDto, SignUpDto } from '../dto';
-import { ValidationMessages } from '../dto/messages/validation-messages';
+import { ValidationMessages } from '../../dto/messages/validation-messages';
 
 describe('ValidationPipe', () => {
   const validationPipe = new ValidationPipe({

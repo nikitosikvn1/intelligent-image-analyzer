@@ -7,6 +7,8 @@ import { Repository } from 'typeorm';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { JwtDto, JwtGenerationDto, JwtGenerationResultDto, JwtValidationResultDto, SignUpDto, SignUpResultDto } from '../dto';
 import { ConflictException } from '@nestjs/common';
+import { VerificationDataDto } from 'src/dto/verification-data.dto';
+import { MailService } from '../../mail/mail.service';
 
 describe('AuthController', () => {
   type CachedTokens = {
@@ -20,10 +22,10 @@ describe('AuthController', () => {
     accessToken: '',
     refreshToken: '',
   };
-  let cachedTokeens: CachedTokens = {};
+  let cachedData: CachedTokens = {};
+  let sendedEmails = [];
 
   const USER_REPOSITORY_TOKEN = getRepositoryToken(User);
-
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -86,14 +88,22 @@ describe('AuthController', () => {
         {
           provide: 'CACHE_MANAGER',
           useValue: {
-            get: async (key: string) => cachedTokeens[key],
+            get: async (key: string) => cachedData[key],
             set: async (key: string, value: JwtGenerationResultDto) => {
-              cachedTokeens[key] = value;
+              cachedData[key] = value;
             },
             del: async (key: string) => {
-              delete cachedTokeens[key];
+              delete cachedData[key];
             },
           },
+        },
+        {
+          provide: MailService,
+          useValue: {
+            sendVerificationMail: (dto: VerificationDataDto) => {
+              sendedEmails.push(dto);
+            },
+          }
         },
       ],
     }).compile();
@@ -108,7 +118,8 @@ describe('AuthController', () => {
       accessToken: '',
       refreshToken: '',
     };
-    cachedTokeens = {};
+    cachedData = {};
+    sendedEmails = [];
   });
 
   describe('signUp', () => {
@@ -125,7 +136,7 @@ describe('AuthController', () => {
 
       const resultDto: SignUpResultDto = {
         status: 'success',
-        message: 'User has been registered',
+        message: 'User has been registered. Please verify your account by clicking the link sent to your email.',
       };
 
       // When
