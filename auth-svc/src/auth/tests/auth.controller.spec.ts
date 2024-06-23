@@ -9,21 +9,31 @@ import { JwtDto, JwtGenerationDto, JwtGenerationResultDto, JwtValidationResultDt
 import { ConflictException } from '@nestjs/common';
 import { VerificationDataDto } from 'src/dto/verification-data.dto';
 import { MailService } from '../../mail/mail.service';
+import { VerificationKeyDto } from '../dto/verification-key.dto';
 
 describe('AuthController', () => {
   type CachedTokens = {
     [key: string]: JwtGenerationResultDto;
   }
 
+  type CachedsendedEmails = {
+    [key: string]: string;
+  }
+
+  type Users = {
+    [key: string]: User;
+  }
+
+  let userCounter = 0;
   let authController: AuthController;
   let userRepository: Repository<User>;
-  let users = {};
+  let users: Users = {};
   let jwt: JwtGenerationResultDto = {
     accessToken: '',
     refreshToken: '',
   };
-  let cachedData: CachedTokens = {};
-  let sendedEmails = [];
+  let cachedData: CachedTokens | CachedsendedEmails = {};
+  let sendedEmails = {};
 
   const USER_REPOSITORY_TOKEN = getRepositoryToken(User);
 
@@ -36,11 +46,20 @@ describe('AuthController', () => {
           provide: USER_REPOSITORY_TOKEN,
           useValue: {
             save: jest.fn(async (user: User) => {
+              user.id = userCounter;
+              userCounter++;
               users[user.email] = user;
               return user;
             }),
             create: jest.fn((user: User) => user),
             findOneBy: jest.fn(async ({ email }) => users[email]),
+            update: jest.fn((id: number, data: object) => {
+              const user: User = Object.values(users).find((user: User) => user.id === id);
+              if (user) {
+                Object.assign(user, data);
+              }
+              return user;
+            }),
           },
         },
         {
@@ -89,7 +108,7 @@ describe('AuthController', () => {
           provide: 'CACHE_MANAGER',
           useValue: {
             get: async (key: string) => cachedData[key],
-            set: async (key: string, value: JwtGenerationResultDto) => {
+            set: async (key: string, value: JwtGenerationResultDto | string) => {
               cachedData[key] = value;
             },
             del: async (key: string) => {
@@ -101,7 +120,7 @@ describe('AuthController', () => {
           provide: MailService,
           useValue: {
             sendVerificationMail: (dto: VerificationDataDto) => {
-              sendedEmails.push(dto);
+              sendedEmails[dto.resiverEmail] = dto.key;
             },
           }
         },
@@ -119,11 +138,12 @@ describe('AuthController', () => {
       refreshToken: '',
     };
     cachedData = {};
-    sendedEmails = [];
+    sendedEmails = {};
+    userCounter = 0;
   });
 
   describe('signUp', () => {
-    it('should register a new user and hash the password', async () => {
+    it('should register a new user, hash the password and send verefication email', async () => {
       // Given
       const bcryptHashLength = 60;
 
@@ -147,6 +167,8 @@ describe('AuthController', () => {
       expect(result).toEqual(resultDto);
       expect(user).toBeDefined();
       expect(user.password.length).toBe(bcryptHashLength);
+      expect(Object.keys(cachedData).length).toBeGreaterThan(0);
+      expect(Object.keys(sendedEmails).length).toBeGreaterThan(0);
     });
 
     it('should throw an error if user with the same email already exists', async () => {
@@ -165,6 +187,103 @@ describe('AuthController', () => {
 
       // Then
       await expect(authController.signUp(inputDto)).rejects.toThrow(new ConflictException(errMessage));
+    });
+  });
+
+  describe('verifyUser', () => {
+    const SignUpDto: SignUpDto = {
+      firstname: 'John',
+      lastname: 'KowalskiUfuqfhq231',
+      email: 'example@gmail.com',
+      password: 'StrongPassword123!',
+    };
+
+    it('should verify user account if key is valid', async () => {
+      // Given      
+      const expectedResult = {
+        status: 'success',
+        message: 'User has been verified',
+      };
+
+      await authController.signUp(SignUpDto);
+
+      const verificationKeyDto: VerificationKeyDto = {
+        key: sendedEmails[SignUpDto.email],
+      };
+
+      // When
+      const result = await authController.verifyUser(verificationKeyDto);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
+      expect(Object.keys(cachedData).length).toBe(0);
+      expect(users[SignUpDto.email].isVerified).toBeTruthy();
+    });
+
+    it('should indicate key is invalid when provided invalid verification key', async () => {
+      // Given
+      const expectedResult = {
+        status: 'error',
+        message: 'Invalid verification key',
+      };
+
+      const invalidVerificationKeyDto: VerificationKeyDto = {
+        key: 'invalid-key',
+      };
+
+      // When
+      const result = await authController.verifyUser(invalidVerificationKeyDto);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
+    });
+
+    it('should indicate verification key is invalid when user does not exist', async () => {
+      // Given
+      const expectedResult = {
+        status: 'error',
+        message: 'User with such email does not exist',
+      };
+
+      await authController.signUp(SignUpDto);
+
+      const invalidKey: VerificationKeyDto = {
+        key: sendedEmails[SignUpDto.email],
+      };
+
+      users[SignUpDto.email] = undefined;
+
+      // When
+      const result = await authController.verifyUser(invalidKey);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
+    });
+
+    it('should indicate verification key is invalid when user is already verified', async () => {
+      // Given
+      const expectedResult = {
+        status: 'error',
+        message: 'User is already verified',
+      };
+
+      await authController.signUp(SignUpDto);
+
+      const verificationKeyDto: VerificationKeyDto = {
+        key: sendedEmails[SignUpDto.email],
+      };
+
+      users[SignUpDto.email].isVerified = true;
+
+      // When
+      const result = await authController.verifyUser(verificationKeyDto);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
     });
   });
 
