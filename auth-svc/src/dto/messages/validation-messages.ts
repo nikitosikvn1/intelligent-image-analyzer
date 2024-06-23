@@ -9,6 +9,9 @@
  */
 
 export const ValidationMessages = {
+  verifyKey: {
+    valid: 'key must be a valid UUID',
+  },
   firstName: {
     string: 'first name must be a string',
     alpha: 'first name must contain only latin letters',

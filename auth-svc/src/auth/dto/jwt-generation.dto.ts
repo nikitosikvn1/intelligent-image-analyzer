@@ -1,5 +1,5 @@
 import { IsEmail, IsString, IsNotEmpty, IsOptional } from "class-validator";
-import { ValidationMessages } from "./messages/validation-messages";
+import { ValidationMessages } from "../../dto/messages/validation-messages";
 
 /**
  * Data Transfer Object (DTO) for a sign-in request. It validates user credentials, ensuring they meet
@@ -27,7 +27,7 @@ export class JwtGenerationDto {
    * @IsNotEmpty Ensures the password field is not left blank, maintaining the integrity of authentication requests.
    */
   @IsString({ message: ValidationMessages.password.string })
-  @IsNotEmpty({message: ValidationMessages.password.required})
+  @IsNotEmpty({ message: ValidationMessages.password.required })
   password: string;
 
 

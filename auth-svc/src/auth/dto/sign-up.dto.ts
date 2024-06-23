@@ -1,5 +1,5 @@
 import { IsEmail, IsString, IsStrongPassword, MinLength, MaxLength, IsAlpha, IsNotEmpty } from "class-validator";
-import { ValidationMessages } from "./messages/validation-messages";
+import { ValidationMessages } from "../../dto/messages/validation-messages";
 
 /**
  * Data Transfer Object (DTO) used for new user registration. This class validates user input against 
