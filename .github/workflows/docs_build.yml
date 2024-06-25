@@ -1,0 +1,99 @@
+name: Build docs
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+    types: [closed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Protobuf
+        run: sudo apt-get install protobuf-compiler
+      
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Setup pages
+        id: pages
+        uses: actions/configure-pages@v4
+      
+        # Auth svc docs
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./auth-svc
+      
+      - name: Generate Documentation
+        run: npx @compodoc/compodoc -p tsconfig.json -d docs
+        working-directory: ./auth-svc
+
+      # Api gateway svc docs
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./api-gateway-svc
+      
+      - name: Generate Documentation
+        run: npx @compodoc/compodoc -p tsconfig.json -d docs
+        working-directory: ./api-gateway-svc
+
+        # Rust Docs
+      - name: Clean docs folder
+        working-directory: grpc-vision-svc
+        run: cargo clean --doc
+      
+      - name: Build docs
+        working-directory: grpc-vision-svc
+        run: cargo doc
+      
+      - name: Remove lock file
+        working-directory: grpc-vision-svc
+        run: rm target/doc/.lock
+      
+      - name: Create index page
+        run: |
+          echo '<h1>Documentation</h1>' > index.html
+          echo '<ul>' >> index.html
+          echo '<li><a href="api-gateway-svc/index.html">API Gateway Service (TS)</a></li>' >> index.html
+          echo '<li><a href="auth-svc/index.html"> Auth service (TS)</a></li>' >> index.html
+          echo '<li><a href="grpc-vision-svc/grpc_vision_svc/index.html">ComputerVision Service (Rust)</a></li>' >> index.html
+          echo '</ul>' >> index.html
+      
+      - name: Prepare files for upload
+        run: |
+          mkdir upload
+          cp -r auth-svc/docs upload/auth-svc
+          cp -r api-gateway-svc/docs upload/api-gateway-svc
+          cp -r grpc-vision-svc/target/doc upload/grpc-vision-svc
+          cp index.html upload/
+      
+      - name: Upload index page
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: upload/
+  
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

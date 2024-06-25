@@ -1,0 +1,38 @@
+name: Gateway Service CI
+
+on:
+  push:
+    branches:
+      - api-gateway-svc
+
+jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+
+      - name: Install Dependencies
+        run: npm install
+        working-directory: ./api-gateway-svc
+
+      - name: Install protobuf
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Generate grpc types
+        run: npm run generate:proto:types
+        working-directory: ./api-gateway-svc
+
+      - name: Run Tests
+        run: npm run test
+        working-directory: ./api-gateway-svc
+  

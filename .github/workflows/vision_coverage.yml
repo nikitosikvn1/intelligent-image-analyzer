@@ -1,0 +1,46 @@
+name: Code coverage
+
+on:
+  push:
+    branches: ["grpc-vision-svc"]
+
+jobs:
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Protobuf
+        run: sudo apt-get install protobuf-compiler
+      
+      - name: Checkout sources
+        uses: actions/checkout@v4
+    
+      - name: Setup cache for Rust and Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            ~/.rustup/toolchains
+          key: coverage-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+      - name: Install nightly
+        run: rustup toolchain install nightly
+    
+      - name: Install Tarpaulin
+        run: |
+          if ! command -v cargo-tarpaulin &> /dev/null
+          then
+              cargo +nightly install cargo-tarpaulin
+          fi
+        
+      - name: Generate code coverage
+        working-directory: grpc-vision-svc
+        run: cargo +nightly tarpaulin --verbose --lib --ignored --timeout 60 --out xml
+        
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: nikitosikvn1/intelligent-image-analyzer

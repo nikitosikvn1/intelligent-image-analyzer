@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package computer_vision;
+
+service ComputerVision {
+    rpc ProcessImage(ImgProcRequest) returns (ImgProcResponse);
+    rpc ProcessImageBatch(stream ImgProcRequest) returns (stream ImgProcResponse);
+}
+
+enum ModelType {
+    BLIP = 0;
+    BLIP_QUANTIZED = 1;
+}
+
+message ImgProcRequest {
+    bytes image = 1;
+    ModelType model = 2;
+}
+
+message ImgProcResponse {
+    string description = 1;
+}
