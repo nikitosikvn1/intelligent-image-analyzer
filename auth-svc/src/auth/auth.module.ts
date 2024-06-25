@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { ConfigModule, ConfigService } from '@nestjs/config'
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { CacheModule } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
 import { MailModule } from 'src/mail/mail.module';
 
 @Module({
@@ -35,12 +35,31 @@ import { MailModule } from 'src/mail/mail.module';
         signOptions: { expiresIn: '12h' },
       }),
     }),
-    // Cache module is used to store refresh JWT to make them disposable
-    CacheModule.register({
-      isGlobal: true,
+    CacheModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const host = configService.get<string>('REDIS_HOST');
+        const port = Number(configService.get<string>('REDIS_PORT'));
+        const password = configService.get<string>('REDIS_PASSWORD');
+        const ttl = 3600 * 12; // 12 hours
+
+        return {
+          store: (): any =>
+            redisStore({
+              socket: {
+                host,
+                port,
+              },
+              password,
+              ttl,
+            }),
+        };
+      },
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService],
 })
+
 export class AuthModule { }
