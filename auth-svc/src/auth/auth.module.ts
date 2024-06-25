@@ -38,7 +38,7 @@ import { MailModule } from 'src/mail/mail.module';
     CacheModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const host = configService.get<string>('REDIS_HOST');
         const port = Number(configService.get<string>('REDIS_PORT'));
         const password = configService.get<string>('REDIS_PASSWORD');
