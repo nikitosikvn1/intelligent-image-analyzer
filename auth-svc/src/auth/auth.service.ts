@@ -1,7 +1,7 @@
 import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SignUpDto, JwtGenerationDto, JwtDto, SignUpResultDto, JwtGenerationResultDto, JwtValidationResultDto } from './dto';
+import { SignUpDto, JwtGenerationDto, JwtDto, SignUpResultDto, JwtGenerationResultDto, JwtValidationResultDto, JwtRefreshFailureResultDto } from './dto';
 import { VerificationDataDto } from 'src/dto/verification-data.dto';
 import { User } from './entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
@@ -214,9 +214,9 @@ export class AuthService {
    * console.log(refreshTokenResult); // Expected result: { accessToken, refreshToken } or { isValid: false, message: ... }
    * 
    * @param {JwtDto} dto The data transfer object containing the refresh token.
-   * @returns {Promise<JwtGenerationResultDto | JwtValidationResultDto>} A result object containing the new JWTs.
+   * @returns {Promise<JwtGenerationResultDto | JwtRefreshFailureResultDto>} A result object containing the new JWTs.
    */
-  async refreshToken(dto: JwtDto): Promise<JwtGenerationResultDto | JwtValidationResultDto> {
+  async refreshToken(dto: JwtDto): Promise<JwtGenerationResultDto | JwtRefreshFailureResultDto> {
     try {
       const oldPayload = this.jwtService.verify(dto.token);
 
@@ -260,12 +260,12 @@ export class AuthService {
   }
 
   /**
-   * Validates a JWT token.
+   * Validates a JWT token. If the token is valid, it checks if the user is verified.
    * 
    * @example
    * // validateToken usage:
    * const validationResult = await authService.validateToken({ token: 'jwt.token.here' });
-   * console.log(validationResult); // Expected results: { isValid: true, message: 'Token is valid' } or { isValid: false, message: 'Token expired' | 'Invalid token' }
+   * console.log(validationResult); // Expected results: { isValid: true, isVerified: boolean, message: 'Token is valid' } or { isValid: false, isVerified:false, message: 'Token expired' | 'Invalid token' }
    * 
    * @async
    * @param {JwtDto} dto The data transfer object containing the JWT token to be validated.
@@ -281,13 +281,17 @@ export class AuthService {
         throw new NotAccessTokenError();
       }
 
+      const user = await this.userRepository.findOneBy({ email: payload.email });
+
       return {
         isValid: true,
+        isVerified: user.isVerified,
         message: 'Token is valid',
       };
     } catch (err) {
       return {
         isValid: false,
+        isVerified: false,
         message: this.getTokenErrorMessage(err),
       };
     }

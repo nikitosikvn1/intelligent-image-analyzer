@@ -1,7 +1,7 @@
 import { Controller, UsePipes, ValidationPipe, UseFilters } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { SignUpDto, JwtGenerationDto, JwtDto, SignUpResultDto, JwtGenerationResultDto, JwtValidationResultDto } from './dto/';
+import { SignUpDto, JwtGenerationDto, JwtDto, SignUpResultDto, JwtGenerationResultDto, JwtValidationResultDto, JwtRefreshFailureResultDto } from './dto/';
 import { RpcValidationFilter } from './filters/rpc.validation.filter';
 import { VerificationKeyDto } from './dto/verification-key.dto';
 
@@ -71,22 +71,22 @@ export class AuthController {
    * 
    * @async
    * @param {JwtDto} dto JWT data for token refresh.
-   * @returns {Promise<JwtGenerationResultDto | JwtValidationResultDto>} Token refresh result or refresh jwt validation failure.
+   * @returns {Promise<JwtGenerationResultDto | JwtRefreshFailureResultDto>} Token refresh result or refresh jwt validation failure.
    */
   @MessagePattern({ cmd: 'refresh-token' })
   @UsePipes(ValidationPipe)
-  async refreshToken(@Payload() dto: JwtDto): Promise<JwtGenerationResultDto | JwtValidationResultDto> {
+  async refreshToken(@Payload() dto: JwtDto): Promise<JwtGenerationResultDto | JwtRefreshFailureResultDto> {
     return await this.authService.refreshToken(dto);
   }
 
   /**
-   * Validates a JWT token by processing validation requests.
+   * Validates a JWT token by processing validation requests. If the token is valid, it is checked for verification.
    * 
    * @example 
    * // validateToken method usage:
    * validateToken({
    *   token: 'jwt.token.here'
-   * }).then(result => console.log(result)); // Result: { isValid: true, message: 'Token is valid' }
+   * }).then(result => console.log(result)); // Result: { isValid: true, isVerified: boolean, message: 'Token is valid' }
    * 
    * @async
    * @param {JwtDto} dto JWT data for validation.

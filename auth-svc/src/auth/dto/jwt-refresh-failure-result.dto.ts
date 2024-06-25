@@ -6,7 +6,7 @@ import { IsBoolean, IsString } from 'class-validator';
  * This DTO is useful for operations that require token authentication and need to communicate the results
  * of such checks, such as access control decisions or token integrity checks.
  */
-export class JwtValidationResultDto {
+export class JwtRefreshFailureResultDto {
   /**
    * Indicates the validity of the JWT token. True if the token is valid, false otherwise.
    * This property is crucial for conditional flows in authentication and authorization processes.
@@ -15,15 +15,6 @@ export class JwtValidationResultDto {
    */
   @IsBoolean()
   isValid: boolean;
-
-  /**
-   * Indicates user verification status. True if the user is verified, false otherwise.
-   * This property is useful for conditional flows that require verified users, such as accessing protected resources.
-   * 
-   * @IsBoolean Decorator that validates the property is a boolean, ensuring the user verification status is clearly defined.
-   */
-  @IsBoolean()
-  isVerified: boolean;
 
   /**
    * Provides a descriptive message about the JWT token's validation result. This might include information
