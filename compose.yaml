@@ -17,7 +17,7 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping", "-q"]
       interval: 5s
-      timeout: 1s
+      timeout: 2s
       retries: 5
   
   postgres:
@@ -35,6 +35,19 @@ services:
       interval: 5s
       timeout: 1s
       retries: 3
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 1s
+      retries: 5
 
   api-gateway-svc:
     container_name: api-gateway-svc
@@ -59,6 +72,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      redis: 
+        condition: service_healthy
   
   grpc_cv_service:
     container_name: grpc-cv-service
@@ -80,3 +95,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
