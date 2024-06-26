@@ -48,6 +48,9 @@ Manages user authentication and authorization tasks.
     - Handles sign-up requests from clients via the sign-up message pattern.
     - Validates user data using a validation pipe to ensure data integrity.
     - Invokes the signUp method in the AuthService to create a new user account.
+    - Sends an email to the user’s provided email address to verify the account.
+    - Provides the user with a verification link in the email.
+    - If the user clicks the verification link, the user account is verified.
     - Returns a response indicating the success or failure of the sign-up operation.
 
   - ***User Login***:
@@ -59,8 +62,9 @@ Manages user authentication and authorization tasks.
   - ***Token Validation***:
     - Handles token validation requests from clients via the validate-token message pattern.
     - Validates JWT tokens provided by clients to ensure their authenticity and integrity.
+    - Checks if the user is verified.
     - Invokes the validateToken method in the AuthService to perform token validation.
-    - Returns a response indicating whether the token is valid or not.
+    - Returns a response indicating whether the token is valid and whether the user is verified.
 
   - ***Token Refresh***:
     - Processes token refresh requests from clients via the refresh-token message pattern.
