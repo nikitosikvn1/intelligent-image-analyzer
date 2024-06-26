@@ -5,7 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
 import { Repository } from 'typeorm';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { JwtDto, JwtGenerationDto, JwtGenerationResultDto, JwtValidationResultDto, SignUpDto, SignUpResultDto } from '../dto';
+import { JwtDto, JwtGenerationDto, JwtGenerationResultDto, JwtRefreshFailureResultDto, JwtValidationResultDto, SignUpDto, SignUpResultDto } from '../dto';
 import { ConflictException } from '@nestjs/common';
 import { VerificationDataDto } from 'src/dto/verification-data.dto';
 import { MailService } from '../../mail/mail.service';
@@ -371,6 +371,7 @@ describe('AuthController', () => {
       // Given
       const expectedResult: JwtValidationResultDto = {
         isValid: true,
+        isVerified: false,
         message: 'Token is valid',
       };
 
@@ -391,6 +392,7 @@ describe('AuthController', () => {
       // Given
       const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Provided token is not an access token',
       };
 
@@ -414,6 +416,7 @@ describe('AuthController', () => {
       // Given
       const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Provided token is not an access token',
       };
 
@@ -438,6 +441,7 @@ describe('AuthController', () => {
 
       const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Invalid token',
       };
 
@@ -458,8 +462,9 @@ describe('AuthController', () => {
         token: 'expired.token.jwt',
       };
 
-      const expectedResult = {
+      const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Token expired',
       };
 
@@ -508,6 +513,7 @@ describe('AuthController', () => {
       // Given
       const expectedAccessResult: JwtValidationResultDto = {
         isValid: true,
+        isVerified: false,
         message: 'Token is valid',
       };
 
@@ -542,7 +548,7 @@ describe('AuthController', () => {
 
     it('should indicate token is invalid after using refresh token', async () => {
       // Given
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Provided token is not a refresh token',
       };
@@ -563,7 +569,7 @@ describe('AuthController', () => {
 
     it('should indicate token is not refresh token', async () => {
       // Given
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Provided token is not a refresh token',
       };
@@ -586,7 +592,7 @@ describe('AuthController', () => {
         token: 'invalid.token.jwt',
       };
 
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Invalid token',
       };
@@ -605,7 +611,7 @@ describe('AuthController', () => {
         token: 'expired.token.jwt',
       };
 
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Token expired',
       };

@@ -285,7 +285,7 @@ export class AuthService {
 
       return {
         isValid: true,
-        isVerified: user.isVerified,
+        isVerified: user.isVerified || false,
         message: 'Token is valid',
       };
     } catch (err) {
