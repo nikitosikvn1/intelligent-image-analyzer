@@ -5,25 +5,37 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
 import { Repository } from 'typeorm';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { JwtDto, JwtGenerationDto, JwtGenerationResultDto, JwtValidationResultDto, SignUpDto, SignUpResultDto } from '../dto';
+import { JwtDto, JwtGenerationDto, JwtGenerationResultDto, JwtRefreshFailureResultDto, JwtValidationResultDto, SignUpDto, SignUpResultDto } from '../dto';
 import { ConflictException } from '@nestjs/common';
+import { VerificationDataDto } from 'src/dto/verification-data.dto';
+import { MailService } from '../../mail/mail.service';
+import { VerificationKeyDto } from '../dto/verification-key.dto';
 
 describe('AuthController', () => {
   type CachedTokens = {
     [key: string]: JwtGenerationResultDto;
   }
 
+  type CachedsendedEmails = {
+    [key: string]: string;
+  }
+
+  type Users = {
+    [key: string]: User;
+  }
+
+  let userCounter = 0;
   let authController: AuthController;
   let userRepository: Repository<User>;
-  let users = {};
+  let users: Users = {};
   let jwt: JwtGenerationResultDto = {
     accessToken: '',
     refreshToken: '',
   };
-  let cachedTokeens: CachedTokens = {};
+  let cachedData: CachedTokens | CachedsendedEmails = {};
+  let sendedEmails = {};
 
   const USER_REPOSITORY_TOKEN = getRepositoryToken(User);
-
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -34,11 +46,20 @@ describe('AuthController', () => {
           provide: USER_REPOSITORY_TOKEN,
           useValue: {
             save: jest.fn(async (user: User) => {
+              user.id = userCounter;
+              userCounter++;
               users[user.email] = user;
               return user;
             }),
             create: jest.fn((user: User) => user),
             findOneBy: jest.fn(async ({ email }) => users[email]),
+            update: jest.fn((id: number, data: object) => {
+              const user: User = Object.values(users).find((user: User) => user.id === id);
+              if (user) {
+                Object.assign(user, data);
+              }
+              return user;
+            }),
           },
         },
         {
@@ -86,14 +107,22 @@ describe('AuthController', () => {
         {
           provide: 'CACHE_MANAGER',
           useValue: {
-            get: async (key: string) => cachedTokeens[key],
-            set: async (key: string, value: JwtGenerationResultDto) => {
-              cachedTokeens[key] = value;
+            get: async (key: string) => cachedData[key],
+            set: async (key: string, value: JwtGenerationResultDto | string) => {
+              cachedData[key] = value;
             },
             del: async (key: string) => {
-              delete cachedTokeens[key];
+              delete cachedData[key];
             },
           },
+        },
+        {
+          provide: MailService,
+          useValue: {
+            sendVerificationMail: (dto: VerificationDataDto) => {
+              sendedEmails[dto.resiverEmail] = dto.key;
+            },
+          }
         },
       ],
     }).compile();
@@ -108,11 +137,13 @@ describe('AuthController', () => {
       accessToken: '',
       refreshToken: '',
     };
-    cachedTokeens = {};
+    cachedData = {};
+    sendedEmails = {};
+    userCounter = 0;
   });
 
   describe('signUp', () => {
-    it('should register a new user and hash the password', async () => {
+    it('should register a new user, hash the password and send verefication email', async () => {
       // Given
       const bcryptHashLength = 60;
 
@@ -125,7 +156,7 @@ describe('AuthController', () => {
 
       const resultDto: SignUpResultDto = {
         status: 'success',
-        message: 'User has been registered',
+        message: 'User has been registered. Please verify your account by clicking the link sent to your email.',
       };
 
       // When
@@ -136,6 +167,8 @@ describe('AuthController', () => {
       expect(result).toEqual(resultDto);
       expect(user).toBeDefined();
       expect(user.password.length).toBe(bcryptHashLength);
+      expect(Object.keys(cachedData).length).toBeGreaterThan(0);
+      expect(Object.keys(sendedEmails).length).toBeGreaterThan(0);
     });
 
     it('should throw an error if user with the same email already exists', async () => {
@@ -154,6 +187,103 @@ describe('AuthController', () => {
 
       // Then
       await expect(authController.signUp(inputDto)).rejects.toThrow(new ConflictException(errMessage));
+    });
+  });
+
+  describe('verifyUser', () => {
+    const SignUpDto: SignUpDto = {
+      firstname: 'John',
+      lastname: 'KowalskiUfuqfhq231',
+      email: 'example@gmail.com',
+      password: 'StrongPassword123!',
+    };
+
+    it('should verify user account if key is valid', async () => {
+      // Given      
+      const expectedResult = {
+        status: 'success',
+        message: 'User has been verified',
+      };
+
+      await authController.signUp(SignUpDto);
+
+      const verificationKeyDto: VerificationKeyDto = {
+        key: sendedEmails[SignUpDto.email],
+      };
+
+      // When
+      const result = await authController.verifyUser(verificationKeyDto);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
+      expect(Object.keys(cachedData).length).toBe(0);
+      expect(users[SignUpDto.email].isVerified).toBeTruthy();
+    });
+
+    it('should indicate key is invalid when provided invalid verification key', async () => {
+      // Given
+      const expectedResult = {
+        status: 'error',
+        message: 'Invalid verification key',
+      };
+
+      const invalidVerificationKeyDto: VerificationKeyDto = {
+        key: 'invalid-key',
+      };
+
+      // When
+      const result = await authController.verifyUser(invalidVerificationKeyDto);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
+    });
+
+    it('should indicate verification key is invalid when user does not exist', async () => {
+      // Given
+      const expectedResult = {
+        status: 'error',
+        message: 'User with such email does not exist',
+      };
+
+      await authController.signUp(SignUpDto);
+
+      const invalidKey: VerificationKeyDto = {
+        key: sendedEmails[SignUpDto.email],
+      };
+
+      users[SignUpDto.email] = undefined;
+
+      // When
+      const result = await authController.verifyUser(invalidKey);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
+    });
+
+    it('should indicate verification key is invalid when user is already verified', async () => {
+      // Given
+      const expectedResult = {
+        status: 'error',
+        message: 'User is already verified',
+      };
+
+      await authController.signUp(SignUpDto);
+
+      const verificationKeyDto: VerificationKeyDto = {
+        key: sendedEmails[SignUpDto.email],
+      };
+
+      users[SignUpDto.email].isVerified = true;
+
+      // When
+      const result = await authController.verifyUser(verificationKeyDto);
+
+      // Then
+      expect(result).toBeDefined();
+      expect(result).toStrictEqual(expectedResult);
     });
   });
 
@@ -241,6 +371,7 @@ describe('AuthController', () => {
       // Given
       const expectedResult: JwtValidationResultDto = {
         isValid: true,
+        isVerified: false,
         message: 'Token is valid',
       };
 
@@ -261,6 +392,7 @@ describe('AuthController', () => {
       // Given
       const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Provided token is not an access token',
       };
 
@@ -284,6 +416,7 @@ describe('AuthController', () => {
       // Given
       const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Provided token is not an access token',
       };
 
@@ -308,6 +441,7 @@ describe('AuthController', () => {
 
       const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Invalid token',
       };
 
@@ -328,8 +462,9 @@ describe('AuthController', () => {
         token: 'expired.token.jwt',
       };
 
-      const expectedResult = {
+      const expectedResult: JwtValidationResultDto = {
         isValid: false,
+        isVerified: false,
         message: 'Token expired',
       };
 
@@ -378,6 +513,7 @@ describe('AuthController', () => {
       // Given
       const expectedAccessResult: JwtValidationResultDto = {
         isValid: true,
+        isVerified: false,
         message: 'Token is valid',
       };
 
@@ -412,7 +548,7 @@ describe('AuthController', () => {
 
     it('should indicate token is invalid after using refresh token', async () => {
       // Given
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Provided token is not a refresh token',
       };
@@ -433,7 +569,7 @@ describe('AuthController', () => {
 
     it('should indicate token is not refresh token', async () => {
       // Given
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Provided token is not a refresh token',
       };
@@ -456,7 +592,7 @@ describe('AuthController', () => {
         token: 'invalid.token.jwt',
       };
 
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Invalid token',
       };
@@ -475,7 +611,7 @@ describe('AuthController', () => {
         token: 'expired.token.jwt',
       };
 
-      const expectedResult: JwtValidationResultDto = {
+      const expectedResult: JwtRefreshFailureResultDto = {
         isValid: false,
         message: 'Token expired',
       };

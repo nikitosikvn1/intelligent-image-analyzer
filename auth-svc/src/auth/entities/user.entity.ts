@@ -50,4 +50,12 @@ export class User {
    */
   @Column()
   password: string;
+
+  /**
+   * A boolean flag indicating whether the user's email address has been verified.
+   * 
+   * @Column Decorator that maps this property to a boolean column in the 'users' table.
+   */
+  @Column({ default: false })
+  isVerified: boolean;
 }

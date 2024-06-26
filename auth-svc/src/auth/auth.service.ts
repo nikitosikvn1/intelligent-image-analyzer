@@ -1,13 +1,17 @@
 import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SignUpDto, JwtGenerationDto, JwtDto, SignUpResultDto, JwtGenerationResultDto, JwtValidationResultDto } from './dto';
+import { SignUpDto, JwtGenerationDto, JwtDto, SignUpResultDto, JwtGenerationResultDto, JwtValidationResultDto, JwtRefreshFailureResultDto } from './dto';
+import { VerificationDataDto } from 'src/dto/verification-data.dto';
 import { User } from './entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { NotRefreshTokenError, NotAccessTokenError } from './exceptions';
 import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { MailService } from '../mail/mail.service';
+import { VerificationKeyDto } from './dto/verification-key.dto';
+import { v4 as uuidV4 } from 'uuid';
 
 /**
  * AuthService handles user authentication processes like registration, login, and JWT token validation. 
@@ -21,12 +25,19 @@ export class AuthService {
    * Time-to-live (TTL) for the refresh token cache, in milliseconds.
    */
   private readonly JWT_REFRESH_TTL = 1000 * 60 * 60 * 24; // 24 hours
+  
+  /**
+   * Time-to-live (TTL) for the verification key cache, in milliseconds.
+   */
+  private readonly VERIFY_KEY_TTL = 1000 * 60 * 30; // 30 minutes
 
   /**
   * Initializes AuthService with necessary dependencies.
   * 
-  * @param {Repository<User>} userRepository Injected TypeORM repository for accessing user data.
-  * @param {JwtService} jwtService Injected service for handling JWT operations, such as token generation and verification.
+  * @param {Repository<User>} userRepository The repository for the User entity, enabling database operations.
+  * @param {JwtService} jwtService The service for handling JWT token generation and verification.
+  * @param {Cache} cacheManager The cache manager for storing and retrieving JWT tokens.
+  * @param {MailService} mailService The service for sending verification emails.
   */
   constructor(
     @InjectRepository(User)
@@ -34,10 +45,11 @@ export class AuthService {
     private jwtService: JwtService,
     @Inject(CACHE_MANAGER)
     private cacheManager: Cache,
+    private mailService: MailService,
   ) { }
 
   /**
-   * Registers a new user with the given sign-up details.
+   * Registers a new user with the given sign-up details. Sends a verification email to the user's email address.
    * 
    * @example
    * // signUp usage:
@@ -47,7 +59,7 @@ export class AuthService {
    *   email: 'email@gmail.com,
    *   password: 'StrongPassword123!'
    * });
-   * console.log(signUpResult); // Expected result: { status: 'success', message: 'User has been registered' }
+   * console.log(signUpResult); // Expected result: { status: 'success', message: 'User has been registered. Please verify your account by clicking the link sent to your email.' }
    * 
    * @async
    * @param {SignUpDto} dto The data transfer object containing the sign-up details.
@@ -63,6 +75,7 @@ export class AuthService {
 
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(dto.password, salt);
+    const emailVerificationKey: string = uuidV4();
 
     const newUser = this.userRepository.create({
       firstname: dto.firstname,
@@ -71,11 +84,73 @@ export class AuthService {
       password: hashedPassword,
     });
 
+    const emailVerificationData: VerificationDataDto = {
+      key: emailVerificationKey,
+      resiverEmail: dto.email,
+    };
+
+    // Store email verification key in the cache
+    await this.cacheManager.set(`verify-key-<${emailVerificationData.key}>`, dto.email, this.VERIFY_KEY_TTL);
+
     await this.userRepository.save(newUser);
+
+    this.mailService.sendVerificationMail(emailVerificationData);
+
     return {
       status: 'success',
-      message: 'User has been registered',
+      message: 'User has been registered. Please verify your account by clicking the link sent to your email.',
     };
+  }
+
+  /**
+   * Verifies a user based on the provided verification key.
+   * 
+   * @example
+   * // verifyUser usage:
+   * const verifyResult = await authService.verifyUser('verification-key-here');
+   * console.log(verifyResult); // Expected result: { status: 'success', message: 'User has been verified' }
+   * 
+   * @async
+   * @param {VerificationKeyDto} dto The data transfer object containing the verification key.
+   * @returns {Promise<SignUpResultDto>} A result object indicating the status of the verification.
+   * @throws {ConflictException} If the user with the email does not exist or the verification key is invalid.
+   * @throws {Error} If the verification process fails.
+   */
+  async verifyUser(dto: VerificationKeyDto): Promise<SignUpResultDto> {
+    try {
+      // Retrieve the verification data from the cache
+      const cachedVerificationEmail: string = await this.cacheManager.get(`verify-key-<${dto.key}>`);
+
+      // Ensure the verification key is valid
+      if (!cachedVerificationEmail) {
+        throw new Error('Invalid verification key');
+      }
+
+      const user = await this.userRepository.findOneBy({ email: cachedVerificationEmail });
+
+      // Delete the verification key from the cache
+      await this.cacheManager.del(`verify-key-<${dto.key}>`);
+
+      if (!user) {
+        throw new ConflictException('User with such email does not exist');
+      }
+
+      if (user.isVerified) {
+        throw new ConflictException('User is already verified');
+      }
+
+      await this.userRepository.update(user.id, { isVerified: true });
+
+      return {
+        status: 'success',
+        message: 'User has been verified',
+      };
+    } catch (err) {
+      return {
+        status: 'error',
+        message: this.getVerificationKeyErrorMessage(err),
+      };
+    }
   }
 
   /**
@@ -117,11 +192,11 @@ export class AuthService {
     };
 
     // Store tokens in the cache
-    const cachedTokens: string = await this.cacheManager.get(user.email);
+    const cachedTokens: string = await this.cacheManager.get(`JWT-<${user.email}>`);
     if (cachedTokens) {
-      await this.cacheManager.del(user.email);
+      await this.cacheManager.del(`JWT-<${user.email}>`);
     }
-    await this.cacheManager.set(user.email, jwts, this.JWT_REFRESH_TTL);
+    await this.cacheManager.set(`JWT-<${user.email}>`, jwts, this.JWT_REFRESH_TTL);
 
     return jwts;
   }
@@ -139,14 +214,14 @@ export class AuthService {
    * console.log(refreshTokenResult); // Expected result: { accessToken, refreshToken } or { isValid: false, message: ... }
    * 
    * @param {JwtDto} dto The data transfer object containing the refresh token.
-   * @returns {Promise<JwtGenerationResultDto | JwtValidationResultDto>} A result object containing the new JWTs.
+   * @returns {Promise<JwtGenerationResultDto | JwtRefreshFailureResultDto>} A result object containing the new JWTs.
    */
-  async refreshToken(dto: JwtDto): Promise<JwtGenerationResultDto | JwtValidationResultDto> {
+  async refreshToken(dto: JwtDto): Promise<JwtGenerationResultDto | JwtRefreshFailureResultDto> {
     try {
       const oldPayload = this.jwtService.verify(dto.token);
 
       // Retrieve the refresh token from the cache
-      const oldCachedTokens: JwtGenerationResultDto = await this.cacheManager.get(oldPayload.email);
+      const oldCachedTokens: JwtGenerationResultDto = await this.cacheManager.get(`JWT-<${oldPayload.email}>`);
       const oldCachedRefreshToken: string = oldCachedTokens.refreshToken;
 
       const oldCachedPayload = this.jwtService.verify(oldCachedRefreshToken);
@@ -157,7 +232,7 @@ export class AuthService {
       }
 
       // Delete the old refresh token from the cache
-      await this.cacheManager.del(oldCachedPayload.email);
+      await this.cacheManager.del(`JWT-<${oldPayload.email}>`);
 
       const payload = { email: oldCachedPayload.email, sub: oldCachedPayload.sub };
       const accessToken = this.jwtService.sign(payload, { expiresIn: '12h' });
@@ -169,11 +244,11 @@ export class AuthService {
       };
 
       // Store the new refresh token in the cache
-      const cachedJwts: string = await this.cacheManager.get(oldCachedPayload.email);
+      const cachedJwts: string = await this.cacheManager.get(`JWT-<${oldCachedPayload.email}>`);
       if (cachedJwts) {
-        await this.cacheManager.del(oldCachedPayload.email);
+        await this.cacheManager.del(`JWT-<${oldCachedPayload.email}>`);
       }
-      await this.cacheManager.set(oldCachedPayload.email, jwts, this.JWT_REFRESH_TTL);
+      await this.cacheManager.set(`JWT-<${oldCachedPayload.email}>`, jwts, this.JWT_REFRESH_TTL);
 
       return jwts;
     } catch (err) {
@@ -185,12 +260,12 @@ export class AuthService {
   }
 
   /**
-   * Validates a JWT token.
+   * Validates a JWT token. If the token is valid, it checks if the user is verified.
    * 
    * @example
    * // validateToken usage:
    * const validationResult = await authService.validateToken({ token: 'jwt.token.here' });
-   * console.log(validationResult); // Expected results: { isValid: true, message: 'Token is valid' } or { isValid: false, message: 'Token expired' | 'Invalid token' }
+   * console.log(validationResult); // Expected results: { isValid: true, isVerified: boolean, message: 'Token is valid' } or { isValid: false, isVerified:false, message: 'Token expired' | 'Invalid token' }
    * 
    * @async
    * @param {JwtDto} dto The data transfer object containing the JWT token to be validated.
@@ -199,20 +274,24 @@ export class AuthService {
   async validateToken(dto: JwtDto): Promise<JwtValidationResultDto> {
     try {
       const payload = this.jwtService.verify(dto.token);
-      const cachedTokens: JwtGenerationResultDto = await this.cacheManager.get(payload.email);
+      const cachedTokens: JwtGenerationResultDto = await this.cacheManager.get(`JWT-<${payload.email}>`);
       const cachedAccessToken: string = cachedTokens.accessToken;
 
       if (payload.isRefreshToken || cachedAccessToken !== dto.token) {
         throw new NotAccessTokenError();
       }
 
+      const user = await this.userRepository.findOneBy({ email: payload.email });
+
       return {
         isValid: true,
+        isVerified: user.isVerified || false,
         message: 'Token is valid',
       };
     } catch (err) {
       return {
         isValid: false,
+        isVerified: false,
         message: this.getTokenErrorMessage(err),
       };
     }
@@ -239,5 +318,26 @@ export class AuthService {
     };
 
     return errorMessages[err.name] || 'Token verification failed';
+  }
+
+  /**
+   * Determines the appropriate error message for a user verification error based on the specific type of error encountered.
+   *
+   * @example
+   * // getVerificationKeyErrorMessage usage:
+   * const errorMessage = getVerificationKeyErrorMessage(new Error('ConflictException'));
+   * console.log(errorMessage); // Expected result: 'ConflictException'
+   * 
+   * @private
+   * @param {Error} err The error encountered during user verification, which can be one of several types defined in the verification process.
+   * @returns {string} A user-friendly error message tailored to the specific error, enhancing error feedback in client interactions.
+   */
+  private getVerificationKeyErrorMessage(err: Error): string {
+    const errorMessages: { [key: string]: string } = {
+      'ConflictException': err.message,
+      'Error': err.message,
+    };
+
+    return errorMessages[err.name] || 'User verification failed';
   }
 }
